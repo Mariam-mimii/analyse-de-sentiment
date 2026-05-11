@@ -130,7 +130,10 @@ def main():
     
     # 1. Charger les données
     print("\n[ÉTAPE 1] Chargement du dataset")
-    csv_path = Path("spark-project/data/reviews.csv")
+    base_dir = Path(__file__).resolve().parent
+    project_root = base_dir.parent
+    kaggle_path = base_dir / "data" / "reviews_kaggle.csv"
+    csv_path = kaggle_path if kaggle_path.exists() else (base_dir / "data" / "reviews.csv")
     if not csv_path.exists():
         print(f"❌ Fichier non trouvé: {csv_path}")
         return
@@ -199,7 +202,7 @@ def main():
         "predictions": predictions
     }
     
-    output_path = Path("sentiment/resultats.json")
+    output_path = project_root / "resultats.json"
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
     

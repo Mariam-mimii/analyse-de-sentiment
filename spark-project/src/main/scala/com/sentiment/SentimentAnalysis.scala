@@ -75,7 +75,8 @@ object SentimentAnalysis {
 
     try {
       // 1. Load and explore dataset
-      val dataPath = "spark-project/data/reviews.csv"
+      val kagglePath = "spark-project/data/reviews_kaggle.csv"
+      val dataPath = if (new File(kagglePath).exists()) kagglePath else "spark-project/data/reviews.csv"
       val df = spark.read
         .option("header", "true")
         .option("inferSchema", "true")

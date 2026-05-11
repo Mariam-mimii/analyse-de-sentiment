@@ -1,64 +1,82 @@
-
 {
   "dataset": {
-    "total": 30,
-    "positifs": 15,
-    "negatifs": 15,
-    "train": 24,
-    "test": 6
+    "total": 10000,
+    "positifs": 5213,
+    "negatifs": 4787,
+    "train": 8000,
+    "test": 2000
   },
   "modeles": [
     {
       "nom": "TF-IDF + Régression Logistique",
-      "f1": 0.8333,
-      "accuracy": 0.8333,
-      "precision": 0.8333,
-      "recall": 0.8333
+      "f1": 0.8075,
+      "accuracy": 0.804,
+      "precision": 0.8278,
+      "recall": 0.7881
     },
     {
       "nom": "TF-IDF + Naive Bayes",
-      "f1": 1.0,
-      "accuracy": 1.0,
-      "precision": 1.0,
-      "recall": 1.0
+      "f1": 0.8047,
+      "accuracy": 0.802,
+      "precision": 0.8284,
+      "recall": 0.7824
     },
     {
       "nom": "TF-IDF + LinearSVC",
-      "f1": 0.8333,
-      "accuracy": 0.8333,
-      "precision": 0.8333,
-      "recall": 0.8333
+      "f1": 0.8051,
+      "accuracy": 0.8025,
+      "precision": 0.8293,
+      "recall": 0.7824
     }
   ],
   "confusionMatrices": [
     {
       "modelName": "TF-IDF + Régression Logistique",
-      "tp": 5,
-      "tn": 5,
-      "fp": 0,
-      "fn": 1
+      "tp": 822,
+      "tn": 786,
+      "fp": 171,
+      "fn": 221
     },
     {
       "modelName": "TF-IDF + Naive Bayes",
-      "tp": 5,
-      "tn": 5,
-      "fp": 0,
-      "fn": 0
+      "tp": 816,
+      "tn": 788,
+      "fp": 169,
+      "fn": 227
     },
     {
       "modelName": "TF-IDF + LinearSVC",
-      "tp": 5,
-      "tn": 5,
-      "fp": 0,
-      "fn": 1
+      "tp": 816,
+      "tn": 789,
+      "fp": 168,
+      "fn": 227
     }
   ],
   "predictions": [
-    {"texte": "This is an incredible product! I love it!", "reel": 1, "predit": 1},
-    {"texte": "Absolute garbage. I want my money back.", "reel": 0, "predit": 0},
-    {"texte": "It is okay nothing special but works fine.", "reel": 0, "predit": 0},
-    {"texte": "Best product ever! Amazing quality!", "reel": 1, "predit": 1},
-    {"texte": "Terrible experience very disappointed.", "reel": 0, "predit": 0},
-    {"texte": "Excellent service and fast delivery!", "reel": 1, "predit": 1}
+    {
+      "texte": "ummm no it didnt work so i gues im stuck with this uglyone",
+      "reel": 0,
+      "predit": 0
+    },
+    {
+      "texte": "it s too hot thermometer showing 25c at the moment",
+      "reel": 0,
+      "predit": 0
+    },
+    {
+      "texte": "it suck when my playmat is mia all weekend sad",
+      "reel": 0,
+      "predit": 0
+    },
+    {
+      "texte": "good luck on monday keep on rockin",
+      "reel": 1,
+      "predit": 1
+    },
+    {
+      "texte": "had fried oreo downtown vega went to the park with her cousin best day everrrr happy mommy s day",
+      "reel": 1,
+      "predit": 1
+    }
   ]
 }
