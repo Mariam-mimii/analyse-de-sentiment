@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  sentiment-analysis:
+    build: .
+    container_name: sentiment-analysis-4.1.1
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./sentiment:/app/sentiment
+      - ./spark-project:/app/spark-project
+    environment:
+      SPARK_HOME: /opt/spark
+      PYTHONUNBUFFERED: 1
+    command: >
+      sh -c "python generate_results.py && python -m http.server 8000 --directory /app/sentiment"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  sentiment-data:
+    driver: local
