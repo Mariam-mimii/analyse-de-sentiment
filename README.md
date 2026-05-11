@@ -2,19 +2,21 @@
 
 ## 📋 Vue d'ensemble
 
-Un pipeline complet de **classification de sentiments** utilisant **Apache Spark MLlib**, **Scala** et une interface web interactive. Le système analyse des avis clients en français et anglais pour prédire leur sentiment (positif/négatif).
+Ce projet raconte une chose simple: **comprendre l'humeur d'un avis** en quelques secondes. On prend un commentaire client (FR ou EN), on le nettoie, on le transforme en vecteurs, puis on laisse trois modèles décider si c'est **positif** ou **négatif**. Le résultat se voit tout de suite dans un dashboard clair et lisible.
+
+**TL;DR:** vous ouvrez le dashboard, vous testez un commentaire, et vous voyez les métriques.
 
 **Niveau de difficulté:** ⭐⭐⭐ Intermédiaire
 
 ---
 
-## 🎯 Objectifs Pédagogiques
+## 🎯 Ce que vous apprendrez
 
-✅ Appliquer le NLP distribué avec Spark MLlib  
-✅ Maîtriser les techniques de vectorisation de texte  
-✅ Entraîner et évaluer des modèles de classification  
-✅ Optimiser un pipeline de machine learning  
-✅ Créer une interface interactive pour tester les modèles
+- Transformer du texte brut en données exploitables (NLP)
+- Construire un pipeline ML avec Spark MLlib
+- Comparer plusieurs modèles de classification
+- Évaluer proprement (precision, recall, F1)
+- Présenter le tout dans une interface simple et humaine
 
 ---
 
@@ -88,42 +90,29 @@ Classification Models
 
 ## 🚀 Démarrage Rapide
 
-### Option 1: Utiliser le Dashboard (Simple)
+### Option 1: Voir le résultat tout de suite (le plus simple)
 
 ```bash
-# 1. Ouvrir le dashboard dans un navigateur
+# Ouvrir le dashboard dans un navigateur
 dashboard.html
-
-# 2. Les résultats se chargeront depuis resultats.json
-# 3. Tester de nouveaux commentaires dans la zone interactive
 ```
 
-### Option 2: Générer les Résultats (Avec Python)
+Vous pouvez déjà tester un commentaire dans la zone interactive.
+
+### Option 2: Recalculer les résultats (Python)
 
 ```bash
 cd spark-project
-
-# Installer les dépendances
 pip install scikit-learn numpy
-
-# Générer les résultats
 python generate_results.py
-
-# Le fichier sentiment/resultats.json sera mis à jour
 ```
 
-### Option 3: Compiler avec Scala/Spark (Complet)
+### Option 3: Pipeline Spark complet (Scala)
 
 ```bash
 cd spark-project
-
-# Compiler le projet
 sbt clean compile assembly
-
-# Exécuter le pipeline
 spark-submit --class com.sentiment.SentimentAnalysis target/scala-2.13/SentimentAnalysis-assembly-1.0.jar
-
-# Les résultats seront sauvegardés dans sentiment/resultats.json
 ```
 
 ---
