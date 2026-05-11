@@ -8,12 +8,13 @@ import json
 import csv
 import re
 from pathlib import Path
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_validate, StratifiedKFold
+from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC
-from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score, confusion_matrix
+from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score, confusion_matrix, make_scorer
 import numpy as np
 
 
@@ -49,6 +50,58 @@ def normalize_text(text):
     cleaned = re.sub(r"[\W_]+", " ", text.lower(), flags=re.UNICODE)
     tokens = [stem_word(token) for token in cleaned.split() if token]
     return " ".join(tokens)
+
+
+def build_pipeline(model):
+    """Construit une pipeline TF-IDF + classifieur."""
+    return Pipeline([
+        ('tfidf', TfidfVectorizer(max_features=256, lowercase=True, ngram_range=(1, 2), min_df=1, max_df=0.9)),
+        ('clf', model)
+    ])
+
+
+def cross_validate_models(texts, labels):
+    """Calcule une validation croisée 5-fold pour chaque modèle."""
+    models = {
+        'TF-IDF + Régression Logistique': LogisticRegression(max_iter=100, random_state=42),
+        'TF-IDF + Naive Bayes': MultinomialNB(alpha=1.0),
+        'TF-IDF + LinearSVC': LinearSVC(max_iter=1000, random_state=42)
+    }
+
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    scoring = {
+        'f1': make_scorer(f1_score, zero_division=0),
+        'accuracy': make_scorer(accuracy_score),
+        'precision': make_scorer(precision_score, zero_division=0),
+        'recall': make_scorer(recall_score, zero_division=0)
+    }
+
+    cv_results = {}
+    for model_name, model in models.items():
+        print(f"  Validation croisée: {model_name}...", end=" ")
+        scores = cross_validate(
+            build_pipeline(model),
+            texts,
+            labels,
+            cv=cv,
+            scoring=scoring,
+            n_jobs=-1,
+            error_score='raise'
+        )
+
+        cv_results[model_name] = {
+            'f1_mean': round(float(np.mean(scores['test_f1'])), 4),
+            'f1_std': round(float(np.std(scores['test_f1'])), 4),
+            'accuracy_mean': round(float(np.mean(scores['test_accuracy'])), 4),
+            'accuracy_std': round(float(np.std(scores['test_accuracy'])), 4),
+            'precision_mean': round(float(np.mean(scores['test_precision'])), 4),
+            'precision_std': round(float(np.std(scores['test_precision'])), 4),
+            'recall_mean': round(float(np.mean(scores['test_recall'])), 4),
+            'recall_std': round(float(np.std(scores['test_recall'])), 4),
+        }
+        print(f"✓ (F1={cv_results[model_name]['f1_mean']:.4f} ± {cv_results[model_name]['f1_std']:.4f})")
+
+    return cv_results
 
 def load_data(csv_path):
     """Charge les données depuis le CSV"""
@@ -146,6 +199,10 @@ def main():
     neg_count = len(labels) - pos_count
     print(f"  - Positifs: {pos_count} ({pos_count*100//len(labels)}%)")
     print(f"  - Négatifs: {neg_count} ({neg_count*100//len(labels)}%)")
+
+    # 1b. Validation croisée
+    print("\n[ÉTAPE 1b] Validation croisée 5-fold")
+    cv_results = cross_validate_models(texts, labels)
     
     # 2. Split train-test
     print("\n[ÉTAPE 2] Split Train-Test (80-20)")
@@ -188,10 +245,21 @@ def main():
                 "f1": metrics['f1'],
                 "accuracy": metrics['accuracy'],
                 "precision": metrics['precision'],
-                "recall": metrics['recall']
+                "recall": metrics['recall'],
+                "cv": cv_results.get(name, {})
             }
             for name, metrics in results.items()
         ],
+        "crossValidation": {
+            "folds": 5,
+            "models": [
+                {
+                    "nom": name,
+                    **metrics
+                }
+                for name, metrics in cv_results.items()
+            ]
+        },
         "confusionMatrices": [
             {
                 "modelName": name,

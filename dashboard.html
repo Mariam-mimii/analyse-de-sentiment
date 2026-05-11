@@ -470,7 +470,20 @@ footer {
     </table>
   </div>
 
-  <div class="sec">05 — Matrice de confusion</div>
+  <div class="sec">05 — Validation croisée</div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-hd"><div class="card-title"><div class="dot8" style="background:var(--cyan)"></div> Moyennes sur 5 folds</div></div>
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th>Modèle</th><th>F1</th><th>Accuracy</th><th>Précision</th><th>Rappel</th>
+        </tr>
+      </thead>
+      <tbody id="cvBody"></tbody>
+    </table>
+  </div>
+
+  <div class="sec">06 — Matrice de confusion</div>
   <div class="card" style="margin-bottom:20px">
     <div class="card-hd"><div class="card-title"><div class="dot8" style="background:var(--rose)"></div> Confusion Matrix par modèle</div></div>
     <div class="conf-switcher">
@@ -486,7 +499,7 @@ footer {
     </div>
   </div>
 
-  <div class="sec">06 — Prédictions sur données test</div>
+  <div class="sec">07 — Prédictions sur données test</div>
   <div class="card" style="margin-bottom:20px">
     <div class="card-hd"><div class="card-title"><div class="dot8" style="background:var(--cyan)"></div> Résultats de prédiction</div></div>
     <table class="pred-tbl">
@@ -500,7 +513,7 @@ footer {
   </div>
 
   <!-- ── INTERACTIVE TEST POWERED BY CLAUDE API ── -->
-  <div class="sec">07 — Test interactif</div>
+  <div class="sec">08 — Test interactif</div>
   <div class="test-zone">
     <div class="card-hd">
       <div class="card-title"><div class="dot8" style="background:var(--amber)"></div> Analyser un nouveau commentaire</div>
@@ -643,7 +656,7 @@ function render() {
   fillModel('LR', lr); fillModel('NB', nb); fillModel('SVM', svm);
   const best = [lr,nb,svm].reduce((a,b)=>b.f1>a.f1?b:a);
   if (best===nb) document.getElementById('crownNB').style.display='block';
-  renderBars('f1'); renderRadar(); renderCompTable(); renderConf('lr'); renderPreds();
+  renderBars('f1'); renderRadar(); renderCompTable(); renderCrossValidation(); renderConf('lr'); renderPreds();
 }
 
 function fillModel(key, m) {
@@ -730,6 +743,34 @@ function renderCompTable() {
     });
     return `<tr><td>${row.label}</td>${cells.join('')}</tr>`;
   }).join('');
+}
+
+function renderCrossValidation() {
+  const wrap = document.getElementById('cvBody');
+  if (!wrap) return;
+
+  const cvModels = DATA.crossValidation?.models || DATA.modeles.map(m => ({
+    nom: m.nom,
+    f1_mean: m.cv?.f1_mean ?? m.f1,
+    accuracy_mean: m.cv?.accuracy_mean ?? m.accuracy,
+    precision_mean: m.cv?.precision_mean ?? m.precision,
+    recall_mean: m.cv?.recall_mean ?? m.recall,
+    f1_std: m.cv?.f1_std ?? 0,
+    accuracy_std: m.cv?.accuracy_std ?? 0,
+    precision_std: m.cv?.precision_std ?? 0,
+    recall_std: m.cv?.recall_std ?? 0
+  }));
+
+  const metric = (value, std) => `${pct(value)} <span style="color:var(--muted);font-weight:400">± ${pct(std)}</span>`;
+  wrap.innerHTML = cvModels.map(model => `
+    <tr>
+      <td>${model.nom}</td>
+      <td>${metric(model.f1_mean, model.f1_std)}</td>
+      <td>${metric(model.accuracy_mean, model.accuracy_std)}</td>
+      <td>${metric(model.precision_mean, model.precision_std)}</td>
+      <td>${metric(model.recall_mean, model.recall_std)}</td>
+    </tr>
+  `).join('');
 }
 
 // Initialiser confData avec valeurs par défaut si JSON ne charge pas

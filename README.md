@@ -7,6 +7,7 @@ Ce projet fait une chose simple et utile: **deviner l'humeur d'un avis**. On net
 - Ouvrir le dashboard et lire les métriques
 - Tester un commentaire en direct (zone interactive)
 - Recalculer les résultats avec le script Python
+- Voir une validation croisée 5-fold dans le dashboard
 
 ## Démarrage rapide
 
