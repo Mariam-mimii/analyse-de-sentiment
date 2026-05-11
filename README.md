@@ -25,7 +25,6 @@ Ce projet raconte une chose simple: **comprendre l'humeur d'un avis** en quelque
 ```
 sentiment/
 ├── dashboard.html              # Interface interactive (Thème blanc, humain)
-├── rapport_evaluation.html     # Rapport détaillé d'évaluation
 ├── resultats.json             # Résultats des modèles (chargé par dashboard)
 │
 ├── spark-project/             # Pipeline Spark/Scala
@@ -90,16 +89,16 @@ Classification Models
 
 ## 🚀 Démarrage Rapide
 
-### Option 1: Voir le résultat tout de suite (le plus simple)
+### 1) Voir le résultat tout de suite (le plus simple)
 
 ```bash
 # Ouvrir le dashboard dans un navigateur
 dashboard.html
 ```
 
-Vous pouvez déjà tester un commentaire dans la zone interactive.
+Ensuite, écrivez un commentaire dans la zone interactive et regardez la prédiction.
 
-### Option 2: Recalculer les résultats (Python)
+### 2) Recalculer les résultats (Python)
 
 ```bash
 cd spark-project
@@ -107,7 +106,7 @@ pip install scikit-learn numpy
 python generate_results.py
 ```
 
-### Option 3: Pipeline Spark complet (Scala)
+### 3) Pipeline Spark complet (Scala)
 
 ```bash
 cd spark-project
@@ -151,22 +150,15 @@ Pas d'erreurs! Tous les avis correctement classifiés.
 
 ### `dashboard.html`
 - Interface interactive blanche et humaine
-- Visualisation des métriques en temps réel
+- Visualisation claire des métriques
 - Graphiques radar et barres de comparaison
 - **Zone de test interactive:** Analyser de nouveaux commentaires avec NLP local
-- Lien vers le rapport d'évaluation
 
 **Fonctionnalités:**
 - ✅ Chargement dynamique de `resultats.json`
 - ✅ Analyse NLP JavaScript (négation, intensificateurs)
 - ✅ Historique des analyses
 - ✅ Support multilingue (FR + EN)
-
-### `rapport_evaluation.html`
-- Rapport complet d'évaluation
-- Analyse détaillée des résultats
-- Matrices de confusion
-- Recommandations d'amélioration
 
 ### `resultats.json`
 Structure:
@@ -193,7 +185,7 @@ Structure:
 
 ### `SentimentAnalysis.scala`
 - Pipeline Spark MLlib complet
-- 4 étapes de prétraitement NLP
+- Prétraitement NLP
 - 3 modèles de classification
 - Évaluation automatique
 - Génération JSON
@@ -214,7 +206,6 @@ Structure:
 **Livrables:**
 ✅ Pipeline ML complet avec prétraitement NLP  
 ✅ Comparaison des modèles et méthodes  
-✅ Rapport d'évaluation détaillé  
 ✅ Matrices de confusion et analyse des erreurs  
 ✅ Application interactive web  
 
