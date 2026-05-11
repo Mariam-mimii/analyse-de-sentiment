@@ -50,4 +50,4 @@ Le dashboard **affiche** ce qui est dans `resultats.json`. Pour mettre a jour le
 
 ## Auteur
 
-Projet educatif - usage libre.
+Mariam BARBOUCH
