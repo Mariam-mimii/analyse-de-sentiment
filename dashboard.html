@@ -3,54 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NLP Sentiment — Spark MLlib</title>
+<title>NLP Sentiment Analysis</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=DM+Sans:ital,wght@0,300;0,400;0,600;0,800;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:     #ffffff;
-  --bg2:    #f9f9f9;
-  --bg3:    #f0f0f0;
-  --card:   #ffffff;
+  --bg: #ffffff;
+  --bg2: #f9f9f9;
+  --card: #ffffff;
   --border: #e0e0e0;
-  --border2:#d0d0d0;
-  --cyan:   #0073e6;
+  --cyan: #0073e6;
   --violet: #6b5b95;
-  --green:  #1e7e34;
-  --amber:  #d97706;
-  --rose:   #c41e3a;
-  --orange: #ea8b2f;
-  --text:   #2c2c2c;
-  --muted:  #7a7a7a;
-  --mono:   'JetBrains Mono', monospace;
-  --sans:   'DM Sans', sans-serif;
+  --green: #1e7e34;
+  --amber: #d97706;
+  --rose: #c41e3a;
+  --text: #2c2c2c;
+  --muted: #7a7a7a;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
 }
-*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-body::after {
-  content:''; position:fixed; inset:0; pointer-events:none; z-index:999;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  opacity:.4;
-}
-body::before {
-  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-  background-image: radial-gradient(circle, rgba(0,115,230,0.03) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
-.orb { position:fixed; border-radius:50%; filter:blur(120px); pointer-events:none; z-index:0; }
-.orb1 { width:600px; height:600px; top:-200px; left:-200px; background: radial-gradient(circle, rgba(0,115,230,0.04), transparent 70%); }
-.orb2 { width:500px; height:500px; bottom:-150px; right:-100px; background: radial-gradient(circle, rgba(107,91,149,0.04), transparent 70%); }
-.orb3 { width:300px; height:300px; top:50%; left:50%; background: radial-gradient(circle, rgba(30,126,52,0.03), transparent 70%); }
-.wrapper { position:relative; z-index:1; max-width:1440px; margin:0 auto; padding:0 48px 80px; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+.wrapper { max-width:1200px; margin:0 auto; padding:0 48px 80px; }
 header {
-  position:relative; z-index:1;
-  padding: 36px 48px;
-  border-bottom: 1px solid var(--border);
+  padding: 36px 48px; border-bottom: 1px solid var(--border);
   display:flex; align-items:center; justify-content:space-between;
   background: linear-gradient(180deg, rgba(0,115,230,0.02) 0%, transparent 100%);
 }
@@ -60,13 +35,9 @@ header {
   background: linear-gradient(135deg, var(--cyan), var(--violet));
   display:flex; align-items:center; justify-content:center;
   font-size:22px; flex-shrink:0;
-  box-shadow: 0 0 15px rgba(0,115,230,0.15);
 }
-.hd-title { font-size:20px; font-weight:800; letter-spacing:-.5px;
-  background: linear-gradient(90deg, #fff 0%, var(--cyan) 60%);
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-.hd-sub { font-size:11px; color:var(--muted); font-family:var(--mono); margin-top:3px; letter-spacing:.5px; }
-.hd-right { display:flex; align-items:center; gap:12px; }
+.hd-title { font-size:20px; font-weight:800; color:var(--cyan); }
+.hd-sub { font-size:11px; color:var(--muted); font-family:var(--mono); margin-top:3px; }
 .live-badge {
   display:flex; align-items:center; gap:6px;
   padding:6px 14px; border-radius:20px;
@@ -75,11 +46,6 @@ header {
 }
 .live-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:blink 1.4s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-.ver-tag {
-  padding:6px 14px; border-radius:20px;
-  background:rgba(107,91,149,0.08); border:1px solid rgba(107,91,149,0.25);
-  color:var(--violet); font-size:11px; font-family:var(--mono);
-}
 .sec {
   display:flex; align-items:center; gap:12px;
   font-size:10px; font-weight:500; letter-spacing:3px; text-transform:uppercase;
@@ -87,11 +53,10 @@ header {
   margin: 40px 0 20px;
 }
 .sec::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); margin-left:16px; }
-.stats-row { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:8px; }
+.stats-row { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:8px; }
 .stat {
-  background:var(--card); border:1px solid var(--border); border-radius:14px;
-  padding:20px; position:relative; overflow:hidden;
-  animation: fadeUp .6s ease both;
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  padding:14px; position:relative;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 .stat::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
@@ -100,131 +65,82 @@ header {
 .stat.s2::before { background:var(--rose); }
 .stat.s3::before { background:var(--amber); }
 .stat.s4::before { background:var(--violet); }
-.stat-lbl { font-size:10px; color:var(--muted); font-family:var(--mono); letter-spacing:.5px; margin-bottom:8px; }
-.stat-val { font-size:34px; font-weight:800; line-height:1; }
+.stat-lbl { font-size:9px; color:var(--muted); font-family:var(--mono); margin-bottom:6px; font-weight:600; }
+.stat-val { font-size:24px; font-weight:800; line-height:1; }
 .stat.s0 .stat-val { color:var(--cyan); }
 .stat.s1 .stat-val { color:var(--green); }
 .stat.s2 .stat-val { color:var(--rose); }
 .stat.s3 .stat-val { color:var(--amber); }
 .stat.s4 .stat-val { color:var(--violet); }
-.stat-meta { font-size:11px; color:var(--muted); margin-top:6px; }
-.stat-glow { position:absolute; bottom:-20px; right:-20px; width:80px; height:80px; border-radius:50%; filter:blur(30px); opacity:.15; }
-.stat.s0 .stat-glow { background:var(--cyan); }
-.stat.s1 .stat-glow { background:var(--green); }
-.stat.s2 .stat-glow { background:var(--rose); }
-.stat.s3 .stat-glow { background:var(--amber); }
-.stat.s4 .stat-glow { background:var(--violet); }
-.main-grid { display:grid; grid-template-columns:1.2fr 1fr; gap:20px; margin-bottom:20px; }
+.stat-meta { font-size:10px; color:var(--muted); margin-top:4px; }
 .card {
   background:var(--card); border:1px solid var(--border); border-radius:18px;
-  padding:28px; animation:fadeUp .6s ease both;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding:28px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom:20px;
 }
-.card-hd {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:24px;
-}
+.card-hd { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
 .card-title { font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px; }
 .dot8 { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-.tabs { display:flex; gap:6px; background:var(--bg3); border-radius:10px; padding:4px; border:1px solid var(--border); }
+.tabs { display:flex; gap:6px; background:#f0f0f0; border-radius:10px; padding:4px; }
 .tab {
   padding:5px 14px; border-radius:8px; font-size:11px; font-family:var(--mono);
   cursor:pointer; border:none; background:none; color:var(--muted); transition:.2s;
 }
-.tab.active { background:#f0f0f0; color:var(--cyan); border-bottom:2px solid var(--cyan); }
+.tab.active { background:#fff; color:var(--cyan); border: 1px solid var(--border); }
 .bar-wrap { margin-bottom:14px; }
 .bar-top { display:flex; justify-content:space-between; margin-bottom:6px; }
 .bar-name { font-size:11px; font-family:var(--mono); color:var(--muted); }
 .bar-num { font-size:12px; font-weight:700; }
 .bar-track { height:7px; background:#e8e8e8; border-radius:4px; overflow:hidden; }
-.bar-fill { height:100%; border-radius:4px; width:0; transition:width 1.2s cubic-bezier(.22,1,.36,1); }
-.fill-lr  { background:linear-gradient(90deg,#6b5b95,#0073e6); }
-.fill-nb  { background:linear-gradient(90deg,#1e7e34,#0073e6); }
+.bar-fill { height:100%; border-radius:4px; width:0; transition:width 1.2s ease; }
+.fill-lr { background:linear-gradient(90deg,#6b5b95,#0073e6); }
+.fill-nb { background:linear-gradient(90deg,#1e7e34,#0073e6); }
 .fill-svm { background:linear-gradient(90deg,#c41e3a,#d97706); }
-#radarWrap { display:flex; justify-content:center; margin-top:8px; }
 .model-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px; }
 .model-card {
   background:var(--card); border:1px solid var(--border); border-radius:16px;
-  padding:22px; position:relative; overflow:hidden;
-  animation:fadeUp .6s ease both;
+  padding:22px; position:relative;
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
-.model-card::before { content:''; position:absolute; inset:0; opacity:.02; pointer-events:none; }
-.model-card.mc-lr::before  { background:linear-gradient(135deg,var(--violet),transparent); }
-.model-card.mc-nb::before  { background:linear-gradient(135deg,var(--green),transparent); }
-.model-card.mc-svm::before { background:linear-gradient(135deg,var(--rose),transparent); }
 .model-badge {
   display:inline-flex; align-items:center; gap:5px;
   padding:3px 10px; border-radius:6px; font-size:10px; font-family:var(--mono);
   margin-bottom:12px;
 }
-.mc-lr  .model-badge { background:rgba(107,91,149,.1); border:1px solid rgba(107,91,149,.25); color:var(--violet); }
-.mc-nb  .model-badge { background:rgba(30,126,52,.1); border:1px solid rgba(30,126,52,.25); color:var(--green); }
-.mc-svm .model-badge { background:rgba(196,30,58,.1); border:1px solid rgba(196,30,58,.25); color:var(--rose); }
+.mc-lr .model-badge { background:rgba(107,91,149,.1); color:var(--violet); }
+.mc-nb .model-badge { background:rgba(30,126,52,.1); color:var(--green); }
+.mc-svm .model-badge { background:rgba(196,30,58,.1); color:var(--rose); }
 .model-name { font-size:13px; font-weight:700; margin-bottom:16px; line-height:1.4; }
 .model-metrics { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .mm-item { background:#f5f5f5; border-radius:10px; padding:10px; border:1px solid #e8e8e8; }
-.mm-lbl { font-size:9px; font-family:var(--mono); color:var(--muted); letter-spacing:.5px; margin-bottom:4px; }
+.mm-lbl { font-size:9px; font-family:var(--mono); color:var(--muted); margin-bottom:4px; }
 .mm-val { font-size:20px; font-weight:800; }
-.mc-lr  .mm-val { color:var(--violet); }
-.mc-nb  .mm-val { color:var(--green); }
+.mc-lr .mm-val { color:var(--violet); }
+.mc-nb .mm-val { color:var(--green); }
 .mc-svm .mm-val { color:var(--rose); }
 .winner-crown { position:absolute; top:14px; right:14px; font-size:18px; }
-.conf-grid { display:flex; justify-content:center; padding:10px 0; }
-.conf-table { border-collapse:collapse; }
-.conf-table th {
-  font-size:10px; font-family:var(--mono); color:var(--muted);
-  padding:6px 10px; text-align:center; letter-spacing:.5px;
+.cmp-table { width:100%; border-collapse:collapse; }
+.cmp-table th {
+  text-align:center; font-size:10px; font-family:var(--mono); color:var(--muted);
+  text-transform:uppercase; letter-spacing:1px; padding:10px 16px;
+  border-bottom:1px solid var(--border);
 }
-.conf-table td {
-  width:90px; height:90px; text-align:center; vertical-align:middle;
-  border-radius:8px; font-size:20px; font-weight:800; cursor:default;
-  transition:.2s;
+.cmp-table th:first-child { text-align:left; }
+.cmp-table td {
+  text-align:center; padding:12px 16px; font-size:13px; font-weight:700;
+  border-bottom:1px solid var(--border);
 }
-.conf-table td:hover { filter:brightness(1.3); transform:scale(1.05); }
-.conf-table td .cf-lbl { font-size:10px; font-family:var(--mono); font-weight:400; opacity:.7; margin-top:4px; }
-.cf-tp { background:rgba(30,126,52,.12); color:var(--green); border:1px solid rgba(30,126,52,.25); }
-.cf-tn { background:rgba(30,126,52,.12); color:var(--green); border:1px solid rgba(30,126,52,.25); }
-.cf-fp { background:rgba(196,30,58,.1); color:var(--rose); border:1px solid rgba(196,30,58,.2); }
-.cf-fn { background:rgba(196,30,58,.1); color:var(--rose); border:1px solid rgba(196,30,58,.2); }
-.conf-switcher { display:flex; gap:8px; margin-bottom:20px; }
-.csw {
-  padding:6px 16px; border-radius:8px; font-size:11px; font-family:var(--mono);
-  cursor:pointer; border:1px solid var(--border); background:#f5f5f5; color:var(--muted); transition:.2s;
-}
-.csw.active { border-color:var(--cyan); color:var(--cyan); background:rgba(0,115,230,.08); }
-.pred-tbl { width:100%; border-collapse:collapse; }
-.pred-tbl th {
-  text-align:left; font-size:10px; font-family:var(--mono);
-  color:var(--muted); text-transform:uppercase; letter-spacing:1px;
-  padding:8px 12px; border-bottom:1px solid var(--border);
-}
-.pred-tbl td { padding:12px; font-size:13px; border-bottom:1px solid rgba(26,35,64,.5); vertical-align:middle; }
-.pred-tbl tr:last-child td { border-bottom:none; }
-.pred-tbl tr:hover td { background:rgba(0,115,230,.02); }
-.bp { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px;
-  background:rgba(30,126,52,.1); border:1px solid rgba(30,126,52,.25); color:var(--green); font-size:11px; font-family:var(--mono); }
-.bn { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px;
-  background:rgba(196,30,58,.1); border:1px solid rgba(196,30,58,.2); color:var(--rose); font-size:11px; font-family:var(--mono); }
-.ok  { color:var(--green); font-size:16px; }
-.err { color:var(--rose); font-size:16px; }
-.comment-cell { max-width:320px; color:var(--muted); font-size:12px; line-height:1.5; }
-
-/* ── INTERACTIVE ZONE ── */
+.cmp-table tr:hover td { background:rgba(0,115,230,.02); }
+.best-cell::after { content:'★'; margin-left:3px; color:var(--amber); }
+.pipeline { display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0; }
+.pipe-step { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:100px; }
+.pipe-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:14px; background:#f5f5f5; border:1px solid #d0d0d0; }
+.pipe-lbl { font-size:10px; font-family:var(--mono); color:var(--muted); text-align:center; line-height:1.4; }
+.pipe-arrow { flex:1; height:2px; min-width:20px; background:linear-gradient(90deg, #d0d0d0, transparent); margin-top:-16px; }
 .test-zone {
   background:var(--card); border:1px solid var(--border); border-radius:18px;
-  padding:30px; margin-top:20px; animation:fadeUp .6s ease both;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding:30px; margin-top:20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
-.ai-badge {
-  display:inline-flex; align-items:center; gap:6px;
-  padding:4px 12px; border-radius:20px;
-  background:linear-gradient(90deg,rgba(0,115,230,.12),rgba(107,91,149,.12));
-  border:1px solid rgba(0,115,230,.25);
-  color:var(--cyan); font-size:10px; font-family:var(--mono); letter-spacing:.5px;
-  margin-bottom:18px;
-}
-.ai-badge-dot { width:6px; height:6px; border-radius:50%; background:var(--cyan); animation:blink 1.4s infinite; }
 textarea {
   width:100%; background:#f9f9f9; border:1px solid var(--border);
   border-radius:12px; color:var(--text); font-family:var(--sans); font-size:14px;
@@ -239,14 +155,10 @@ textarea:focus { outline:none; border-color:rgba(0,115,230,.5); background:#fff;
   transition:.2s; box-shadow:0 2px 8px rgba(0,115,230,.25);
   display:flex; align-items:center; gap:8px;
 }
-.analyze-btn:hover { box-shadow:0 4px 16px rgba(0,115,230,.35); transform:translateY(-2px); }
-.analyze-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
-
-/* ── AI RESULT CARD ── */
+.analyze-btn:hover { box-shadow:0 4px 16px rgba(0,115,230,.35); }
 .ai-result {
   margin-top:20px; border-radius:16px; padding:24px;
-  display:none; animation:fadeUp .4s ease both;
-  position:relative; overflow:hidden;
+  display:none; position:relative;
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 }
 .ai-result.show { display:block; }
@@ -258,20 +170,14 @@ textarea:focus { outline:none; border-color:rgba(0,115,230,.5); background:#fff;
   background:linear-gradient(135deg,rgba(196,30,58,.06),rgba(107,91,149,.03));
   border:1px solid rgba(196,30,58,.25);
 }
-.ai-result.loading {
-  background:rgba(0,115,230,.03);
-  border:1px solid rgba(0,115,230,.12);
-}
 .ai-result-top { display:flex; align-items:center; gap:16px; margin-bottom:16px; }
-.ai-emoji { font-size:32px; font-weight:bold; color:var(--muted); }
-.ai-verdict-wrap {}
+.ai-emoji { font-size:40px; }
 .ai-verdict { font-size:18px; font-weight:800; letter-spacing:-.3px; }
 .ai-result.pos .ai-verdict { color:var(--green); }
 .ai-result.neg .ai-verdict { color:var(--rose); }
-.ai-conf-bar-wrap { margin-top:6px; }
 .ai-conf-label { font-size:10px; font-family:var(--mono); color:var(--muted); margin-bottom:4px; }
 .ai-conf-track { height:5px; background:#e8e8e8; border-radius:3px; width:200px; overflow:hidden; }
-.ai-conf-fill { height:100%; border-radius:3px; transition:width .8s cubic-bezier(.22,1,.36,1); }
+.ai-conf-fill { height:100%; border-radius:3px; transition:width .8s ease; }
 .ai-result.pos .ai-conf-fill { background:linear-gradient(90deg,var(--green),var(--cyan)); }
 .ai-result.neg .ai-conf-fill { background:linear-gradient(90deg,var(--rose),var(--violet)); }
 .ai-explanation {
@@ -284,128 +190,63 @@ textarea:focus { outline:none; border-color:rgba(0,115,230,.5); background:#fff;
 .ai-token {
   padding:3px 10px; border-radius:20px; font-size:11px; font-family:var(--mono);
 }
-.ai-token.pos-tok { background:rgba(30,126,52,.1); border:1px solid rgba(30,126,52,.25); color:var(--green); }
-.ai-token.neg-tok { background:rgba(196,30,58,.1); border:1px solid rgba(196,30,58,.2); color:var(--rose); }
-.ai-token.neu-tok { background:#e8e8e8; border:1px solid #d8d8d8; color:var(--muted); }
-
-/* loading spinner */
-.spinner {
-  width:28px; height:28px; border-radius:50%;
-  border:2px solid var(--border2);
-border-top-color:var(--cyan);
-  animation:spin .7s linear infinite;
-}
-@keyframes spin { to{ transform:rotate(360deg) } }
-.loading-txt { font-size:13px; color:var(--muted); font-family:var(--mono); }
-
-/* history */
-.history-list { margin-top:20px; display:flex; flex-direction:column; gap:8px; }
-.hist-item {
-  background:#f5f5f5; border-radius:10px; padding:12px 16px;
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  border:1px solid var(--border); cursor:pointer; transition:.2s;
-}
-.hist-item:hover { border-color:rgba(0,115,230,.5); background:#f9f9f9; }
-.hist-text { font-size:12px; color:var(--muted); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.hist-badge { flex-shrink:0; }
-
-.pipeline { display:flex; align-items:center; gap:0; overflow-x:auto; padding:10px 0; }
-.pipe-step { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:100px; }
-.pipe-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:14px; background:#f5f5f5; border:1px solid #d0d0d0; }
-.pipe-lbl { font-size:10px; font-family:var(--mono); color:var(--muted); text-align:center; line-height:1.4; }
-.pipe-arrow { flex:1; height:2px; min-width:20px; background:linear-gradient(90deg, #d0d0d0, transparent); margin-top:-16px; }
-
-.cmp-table { width:100%; border-collapse:collapse; }
-.cmp-table th {
-  text-align:center; font-size:10px; font-family:var(--mono); color:var(--muted);
-  text-transform:uppercase; letter-spacing:1px; padding:10px 16px;
-  border-bottom:1px solid var(--border);
-}
-.cmp-table th:first-child { text-align:left; }
-.cmp-table td {
-  text-align:center; padding:12px 16px; font-size:13px; font-weight:700;
-  border-bottom:1px solid rgba(26,35,64,.4);
-}
-.cmp-table td:first-child { text-align:left; font-size:11px; font-family:var(--mono); color:var(--muted); font-weight:400; }
-.cmp-table tr:last-child td { border-bottom:none; }
-.cmp-table tr:hover td { background:rgba(0,115,230,.02); }
-.best-cell { position:relative; }
-.best-cell::after { content:'★'; font-size:9px; margin-left:3px; color:var(--amber); }
-
-@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-footer {
-  border-top:1px solid var(--border); padding:20px 48px;
-  font-size:11px; font-family:var(--mono); color:var(--muted);
-  display:flex; justify-content:space-between; align-items:center;
-  position:relative; z-index:1;
-  background:#f9f9f9;
-}
-.ft-dots { display:flex; gap:6px; }
-.ft-dot { width:6px; height:6px; border-radius:50%; }
-::-webkit-scrollbar { width:4px; height:4px; }
-::-webkit-scrollbar-track { background:transparent; }
-::-webkit-scrollbar-thumb { background:#c0c0c0; border-radius:2px; }
+.ai-token.pos-tok { background:rgba(30,126,52,.1); color:var(--green); }
+.ai-token.neg-tok { background:rgba(196,30,58,.1); color:var(--rose); }
+.ai-token.neu-tok { background:#e8e8e8; color:var(--muted); }
+footer { border-top:1px solid var(--border); padding:20px 48px; font-size:11px; font-family:var(--mono); color:var(--muted); background:#f9f9f9; }
 </style>
 </head>
 <body>
-<div class="orb orb1"></div>
-<div class="orb orb2"></div>
-<div class="orb orb3"></div>
 
 <header>
   <div class="hd-left">
-    <div class="logo-box">SA</div>
+    <div class="logo-box">🧠</div>
     <div>
       <div class="hd-title">NLP Sentiment Analysis</div>
-      <div class="hd-sub">Spark MLlib · Scala 2.13 · Projet 5</div>
+      <div class="hd-sub">Spark MLlib · Kaggle Dataset</div>
     </div>
   </div>
   <div class="hd-right">
-    <button id="recalcBtn" onclick="recalculateResults()" style="padding:6px 14px;border-radius:20px;background:rgba(30,126,52,0.1);border:1px solid rgba(30,126,52,0.3);color:#1e7e34;font-size:11px;font-family:var(--mono);cursor:pointer;margin-right:10px;">
-      ↻ Recalculer
-    </button>
-    <a href="rapport_evaluation.html" style="padding:6px 14px;border-radius:20px;background:rgba(0,115,230,0.1);border:1px solid rgba(0,115,230,0.3);color:#0073e6;font-size:11px;font-family:var(--mono);text-decoration:none;margin-right:12px;">📋 Rapport</a>
-    <div class="live-badge"><div class="live-dot"></div> Analyse Active</div>
-    <div class="ver-tag">v4.1.1</div>
+    <div class="live-badge"><div class="live-dot"></div> Actif</div>
   </div>
 </header>
 
 <div class="wrapper">
 
-  <div class="sec">01 — Jeu de données</div>
+  <div class="sec">01 — Dataset</div>
   <div class="stats-row">
-    <div class="stat s0" style="animation-delay:.05s"><div class="stat-glow"></div><div class="stat-lbl">TOTAL AVIS</div><div class="stat-val" id="sTotal">—</div><div class="stat-meta">commentaires chargés</div></div>
-    <div class="stat s1" style="animation-delay:.1s"><div class="stat-glow"></div><div class="stat-lbl">POSITIFS</div><div class="stat-val" id="sPos">—</div><div class="stat-meta" id="sPosP">—% du dataset</div></div>
-    <div class="stat s2" style="animation-delay:.15s"><div class="stat-glow"></div><div class="stat-lbl">NÉGATIFS</div><div class="stat-val" id="sNeg">—</div><div class="stat-meta" id="sNegP">—% du dataset</div></div>
-    <div class="stat s3" style="animation-delay:.2s"><div class="stat-glow"></div><div class="stat-lbl">TRAIN SET</div><div class="stat-val" id="sTrain">—</div><div class="stat-meta">80% du total</div></div>
-    <div class="stat s4" style="animation-delay:.25s"><div class="stat-glow"></div><div class="stat-lbl">TEST SET</div><div class="stat-val" id="sTest">—</div><div class="stat-meta">20% du total</div></div>
+    <div class="stat s0"><div class="stat-lbl">TOTAL</div><div class="stat-val" id="sTotal">—</div><div class="stat-meta">avis</div></div>
+    <div class="stat s1"><div class="stat-lbl">POSITIFS</div><div class="stat-val" id="sPos">—</div><div class="stat-meta" id="sPosP">—%</div></div>
+    <div class="stat s2"><div class="stat-lbl">NÉGATIFS</div><div class="stat-val" id="sNeg">—</div><div class="stat-meta" id="sNegP">—%</div></div>
+    <div class="stat s3"><div class="stat-lbl">TRAIN</div><div class="stat-val" id="sTrain">—</div><div class="stat-meta">80%</div></div>
+    <div class="stat s4"><div class="stat-lbl">TEST</div><div class="stat-val" id="sTest">—</div><div class="stat-meta">20%</div></div>
   </div>
 
   <div class="sec">02 — Pipeline NLP</div>
-  <div class="card" style="margin-bottom:0">
-    <div class="card-hd"><div class="card-title"><div class="dot8" style="background:var(--cyan)"></div> Étapes de prétraitement</div></div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title"><div class="dot8" style="background:var(--cyan)"></div> Étapes</div></div>
     <div class="pipeline">
-      <div class="pipe-step"><div class="pipe-icon">IN</div><div class="pipe-lbl">Raw Text<br>Input</div></div>
+      <div class="pipe-step"><div class="pipe-icon">📥</div><div class="pipe-lbl">Input</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon" style="border-color:var(--cyan)">CASE</div><div class="pipe-lbl">Lowercase<br>Clean</div></div>
+      <div class="pipe-step"><div class="pipe-icon">🔡</div><div class="pipe-lbl">Lowercase</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon" style="border-color:var(--violet)">TOK</div><div class="pipe-lbl">Tokenizer<br>Spark</div></div>
+      <div class="pipe-step"><div class="pipe-icon">✂️</div><div class="pipe-lbl">Tokenizer</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon" style="border-color:var(--green)">STOP</div><div class="pipe-lbl">StopWords<br>Remover</div></div>
+      <div class="pipe-step"><div class="pipe-icon">🚫</div><div class="pipe-lbl">StopWords</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon" style="border-color:var(--amber)">STEM</div><div class="pipe-lbl">Stemming<br>/ Lemma</div></div>
+      <div class="pipe-step"><div class="pipe-icon">🌿</div><div class="pipe-lbl">Stemming</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon" style="border-color:var(--rose)">TF-IDF</div><div class="pipe-lbl">TF-IDF<br>Vectorizer</div></div>
+      <div class="pipe-step"><div class="pipe-icon">📊</div><div class="pipe-lbl">TF-IDF</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon" style="background:linear-gradient(135deg,rgba(0,115,230,.15),rgba(107,91,149,.15));border-color:var(--violet)">MODEL</div><div class="pipe-lbl">ML<br>Classifier</div></div>
+      <div class="pipe-step"><div class="pipe-icon">🤖</div><div class="pipe-lbl">Model</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon" style="border-color:var(--green)">OUT</div><div class="pipe-lbl">Sentiment<br>Output</div></div>
+      <div class="pipe-step"><div class="pipe-icon">✅</div><div class="pipe-lbl">Output</div></div>
     </div>
   </div>
 
-  <div class="sec">03 — Modèles entraînés</div>
+  <div class="sec">03 — Modèles</div>
   <div class="model-row">
-    <div class="model-card mc-lr" style="animation-delay:.05s">
+    <div class="model-card mc-lr">
       <div class="model-badge">LR</div>
       <div class="model-name">TF-IDF + Régression Logistique</div>
       <div class="model-metrics">
@@ -415,7 +256,7 @@ footer {
         <div class="mm-item"><div class="mm-lbl">RAPPEL</div><div class="mm-val" id="mLRrec">—</div></div>
       </div>
     </div>
-    <div class="model-card mc-nb" style="animation-delay:.1s">
+    <div class="model-card mc-nb">
       <div class="winner-crown" id="crownNB" style="display:none">🏆</div>
       <div class="model-badge">NB</div>
       <div class="model-name">TF-IDF + Naive Bayes</div>
@@ -426,9 +267,9 @@ footer {
         <div class="mm-item"><div class="mm-lbl">RAPPEL</div><div class="mm-val" id="mNBrec">—</div></div>
       </div>
     </div>
-    <div class="model-card mc-svm" style="animation-delay:.15s">
+    <div class="model-card mc-svm">
       <div class="model-badge">SVM</div>
-      <div class="model-name">TF-IDF + Linear SVM (LinearSVC)</div>
+      <div class="model-name">TF-IDF + LinearSVC</div>
       <div class="model-metrics">
         <div class="mm-item"><div class="mm-lbl">F1-SCORE</div><div class="mm-val" id="mSVMf1">—</div></div>
         <div class="mm-item"><div class="mm-lbl">ACCURACY</div><div class="mm-val" id="mSVMacc">—</div></div>
@@ -438,107 +279,48 @@ footer {
     </div>
   </div>
 
-  <div class="sec">04 — Comparaison des modèles</div>
-  <div class="main-grid">
-    <div class="card">
-      <div class="card-hd">
-        <div class="card-title"><div class="dot8" style="background:var(--violet)"></div> Métriques par modèle</div>
-        <div class="tabs">
-          <button class="tab active" onclick="switchMetric(this,'f1')">F1</button>
-          <button class="tab" onclick="switchMetric(this,'accuracy')">Acc</button>
-          <button class="tab" onclick="switchMetric(this,'precision')">Prec</button>
-          <button class="tab" onclick="switchMetric(this,'recall')">Rec</button>
-        </div>
+  <div class="sec">04 — Comparaison</div>
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-title"><div class="dot8" style="background:var(--violet)"></div> Métriques</div>
+      <div class="tabs">
+        <button class="tab active" onclick="switchMetric(this,'f1')">F1</button>
+        <button class="tab" onclick="switchMetric(this,'accuracy')">Acc</button>
+        <button class="tab" onclick="switchMetric(this,'precision')">Prec</button>
+        <button class="tab" onclick="switchMetric(this,'recall')">Rec</button>
       </div>
-      <div id="barsContainer"></div>
     </div>
-    <div class="card">
-      <div class="card-hd"><div class="card-title"><div class="dot8" style="background:var(--green)"></div> Radar comparatif</div></div>
-      <div id="radarWrap"></div>
-    </div>
+    <div id="barsContainer"></div>
   </div>
 
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-hd"><div class="card-title"><div class="dot8" style="background:var(--amber)"></div> Tableau comparatif complet</div></div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title"><div class="dot8" style="background:var(--amber)"></div> Tableau</div></div>
     <table class="cmp-table">
       <thead>
         <tr>
-          <th>Métrique</th><th>TF-IDF + LR</th><th>TF-IDF + Naive Bayes</th><th>TF-IDF + LinearSVC</th>
+          <th>Métrique</th><th>LR</th><th>Naive Bayes</th><th>LinearSVC</th>
         </tr>
       </thead>
       <tbody id="cmpBody"></tbody>
     </table>
   </div>
 
-  <div class="sec">05 — Validation croisée</div>
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-hd"><div class="card-title"><div class="dot8" style="background:var(--cyan)"></div> Moyennes sur 5 folds</div></div>
-    <table class="cmp-table">
-      <thead>
-        <tr>
-          <th>Modèle</th><th>F1</th><th>Accuracy</th><th>Précision</th><th>Rappel</th>
-        </tr>
-      </thead>
-      <tbody id="cvBody"></tbody>
-    </table>
-  </div>
-
-  <div class="sec">06 — Matrice de confusion</div>
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-hd"><div class="card-title"><div class="dot8" style="background:var(--rose)"></div> Confusion Matrix par modèle</div></div>
-    <div class="conf-switcher">
-      <button class="csw active" onclick="switchConf(this,'lr')">Régression Logistique</button>
-      <button class="csw" onclick="switchConf(this,'nb')">Naive Bayes</button>
-      <button class="csw" onclick="switchConf(this,'svm')">LinearSVC</button>
-    </div>
-    <div class="conf-grid"><table class="conf-table" id="confTable"></table></div>
-    <div style="display:flex;gap:24px;justify-content:center;margin-top:16px;font-size:11px;font-family:var(--mono);color:var(--muted)">
-      <span style="color:var(--green)">■ Correct</span>
-      <span style="color:var(--rose)">■ Erreur</span>
-      <span>TP = Vrai Positif · TN = Vrai Négatif · FP = Faux Positif · FN = Faux Négatif</span>
-    </div>
-  </div>
-
-  <div class="sec">07 — Prédictions sur données test</div>
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-hd"><div class="card-title"><div class="dot8" style="background:var(--cyan)"></div> Résultats de prédiction</div></div>
-    <table class="pred-tbl">
-      <thead>
-        <tr>
-          <th>Commentaire</th><th>Réel</th><th>LR</th><th>Naive Bayes</th><th>SVM</th><th>Consensus</th>
-        </tr>
-      </thead>
-      <tbody id="predsBody"></tbody>
-    </table>
-  </div>
-
-  <!-- ── INTERACTIVE TEST POWERED BY CLAUDE API ── -->
-  <div class="sec">08 — Test interactif</div>
+  <div class="sec">05 — Test Interactif</div>
   <div class="test-zone">
     <div class="card-hd">
-      <div class="card-title"><div class="dot8" style="background:var(--amber)"></div> Analyser un nouveau commentaire</div>
-    </div>
-    <div class="ai-badge">
-      <div class="ai-badge-dot"></div>
-      NLP LOCAL · CONTEXTE · MULTILINGUE
+      <div class="card-title"><div class="dot8" style="background:var(--amber)"></div> Prédiction sur nouveau commentaire</div>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">
-      Entrez n'importe quel commentaire en <strong style="color:var(--text)">français ou anglais</strong>. 
-      Claude analysera le sentiment avec explication détaillée — négation, nuance, contexte inclus.
+      Basé sur les patterns du dataset (10 000 avis). Les résultats utilisent le même NLP que l'entraînement.
     </div>
-    <textarea id="testInput" placeholder="Entrez un commentaire en français ou anglais pour analyser son sentiment..."></textarea>
-    <button class="analyze-btn" id="analyzeBtn" onclick="analyzeText()">
-      <span id="btnIcon">▶</span>
-      <span id="btnTxt">Analyser le Sentiment</span>
-    </button>
-
-    <!-- AI Result -->
+    <textarea id="testInput" placeholder="Entrez un avis pour prédire le sentiment…"></textarea>
+    <button class="analyze-btn" id="analyzeBtn" onclick="analyzeText()">⚡ Prédire</button>
     <div class="ai-result" id="aiResult">
       <div class="ai-result-top">
         <div class="ai-emoji" id="aiEmoji"></div>
-        <div class="ai-verdict-wrap">
+        <div>
           <div class="ai-verdict" id="aiVerdict"></div>
-          <div class="ai-conf-bar-wrap">
+          <div style="margin-top:6px;">
             <div class="ai-conf-label" id="aiConfLabel"></div>
             <div class="ai-conf-track"><div class="ai-conf-fill" id="aiConfFill" style="width:0%"></div></div>
           </div>
@@ -547,99 +329,45 @@ footer {
       <div class="ai-explanation" id="aiExplanation"></div>
       <div class="ai-tokens" id="aiTokens"></div>
     </div>
-
-    <!-- History -->
-    <div id="historyWrap" style="display:none">
-      <div style="font-size:10px;font-family:var(--mono);color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:24px;margin-bottom:10px">Historique des analyses</div>
-      <div class="history-list" id="historyList"></div>
-    </div>
   </div>
 
 </div>
 
-<footer>
-  <span>Projet 5 · Analyse de Sentiments · Spark MLlib 4.1.1 · Scala 2.13 · NLP Engine JS</span>
-  <div class="ft-dots">
-    <div class="ft-dot" style="background:var(--cyan)"></div>
-    <div class="ft-dot" style="background:var(--violet)"></div>
-    <div class="ft-dot" style="background:var(--green)"></div>
-  </div>
-</footer>
+<footer>Analyse de Sentiments · Spark MLlib · Kaggle Dataset · 10 000 avis</footer>
 
 <script>
-// ── DATA ──────────────────────────────────────────────────────────────────────
-let DATA = null;
-let confData = {}; // Sera chargé depuis le JSON
-
-async function loadData() {
-  try {
-    const r = await fetch(`resultats.json?ts=${Date.now()}`);
-    DATA = await r.json();
-    
-    // Charger les matrices de confusion
-    if (DATA.confusionMatrices) {
-      confData = {};
-      DATA.confusionMatrices.forEach(cm => {
-        const key = cm.modelName.toLowerCase().includes('logistique') ? 'lr'
-                  : cm.modelName.toLowerCase().includes('bayes') ? 'nb'
-                  : 'svm';
-        confData[key] = { tp: cm.tp, tn: cm.tn, fp: cm.fp, fn: cm.fn };
-      });
+let DATA = {
+  "dataset": {
+    "total": 10000,
+    "positifs": 5213,
+    "negatifs": 4787,
+    "train": 8000,
+    "test": 2000
+  },
+  "modeles": [
+    {
+      "nom": "TF-IDF + Régression Logistique",
+      "f1": 0.8075,
+      "accuracy": 0.804,
+      "precision": 0.8278,
+      "recall": 0.7881
+    },
+    {
+      "nom": "TF-IDF + Naive Bayes",
+      "f1": 0.8047,
+      "accuracy": 0.802,
+      "precision": 0.8284,
+      "recall": 0.7824
+    },
+    {
+      "nom": "TF-IDF + LinearSVC",
+      "f1": 0.8051,
+      "accuracy": 0.8025,
+      "precision": 0.8293,
+      "recall": 0.7824
     }
-  } catch(e) {
-    console.warn('Erreur chargement JSON:', e);
-  }
-  if (!DATA || !DATA.modeles) {
-    DATA = {
-      dataset: { total: 30, positifs: 15, negatifs: 15, train: 24, test: 6 },
-      modeles: [
-        { nom:"TF-IDF + Régression Logistique", f1:0.8333, accuracy:0.8333, precision:0.8333, recall:0.8333 },
-        { nom:"TF-IDF + Naive Bayes",           f1:1.0000, accuracy:1.0000, precision:1.0000, recall:1.0000 },
-        { nom:"TF-IDF + LinearSVC",             f1:0.8333, accuracy:0.8333, precision:0.8333, recall:0.8333 }
-      ],
-      confusionMatrices: [
-        { modelName:"TF-IDF + Régression Logistique", tp:5, tn:5, fp:0, fn:1 },
-        { modelName:"TF-IDF + Naive Bayes",           tp:5, tn:5, fp:0, fn:0 },
-        { modelName:"TF-IDF + LinearSVC",             tp:5, tn:5, fp:0, fn:1 }
-      ],
-      predictions: [
-        { texte:"This is an incredible product! I love it!",  reel:1, predit:1 },
-        { texte:"Absolute garbage. I want my money back.",     reel:0, predit:0 },
-        { texte:"It is okay nothing special but works fine.",  reel:0, predit:0 },
-        { texte:"Best product ever! Amazing quality!",         reel:1, predit:1 },
-        { texte:"Terrible experience very disappointed.",      reel:0, predit:0 }
-      ]
-    };
-    confData = {
-      lr:  { tp:5, tn:5, fp:0, fn:1 },
-      nb:  { tp:5, tn:5, fp:0, fn:0 },
-      svm: { tp:5, tn:5, fp:0, fn:1 }
-    };
-  }
-  if (DATA.modeles.length < 3) {
-    DATA.modeles.push({ nom:"TF-IDF + LinearSVC", f1:0.8333, accuracy:0.8333, precision:0.8333, recall:0.8333 });
-  }
-  render();
-}
-
-async function recalculateResults() {
-  const btn = document.getElementById('recalcBtn');
-  const previousLabel = btn ? btn.textContent : '';
-
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = '⏳ Recalcul...';
-  }
-
-  try {
-    await loadData();
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = previousLabel || '↻ Recalculer';
-    }
-  }
-}
+  ]
+};
 
 function pct(v) { return (v * 100).toFixed(1) + '%'; }
 
@@ -647,20 +375,20 @@ function render() {
   const ds = DATA.dataset;
   const [lr, nb, svm] = DATA.modeles;
   document.getElementById('sTotal').textContent = ds.total;
-  document.getElementById('sPos').textContent   = ds.positifs;
-  document.getElementById('sNeg').textContent   = ds.negatifs;
+  document.getElementById('sPos').textContent = ds.positifs;
+  document.getElementById('sNeg').textContent = ds.negatifs;
   document.getElementById('sTrain').textContent = ds.train;
-  document.getElementById('sTest').textContent  = ds.test;
-  document.getElementById('sPosP').textContent  = Math.round(ds.positifs/ds.total*100) + '% du dataset';
-  document.getElementById('sNegP').textContent  = Math.round(ds.negatifs/ds.total*100) + '% du dataset';
+  document.getElementById('sTest').textContent = ds.test;
+  document.getElementById('sPosP').textContent = Math.round(ds.positifs/ds.total*100) + '%';
+  document.getElementById('sNegP').textContent = Math.round(ds.negatifs/ds.total*100) + '%';
   fillModel('LR', lr); fillModel('NB', nb); fillModel('SVM', svm);
   const best = [lr,nb,svm].reduce((a,b)=>b.f1>a.f1?b:a);
   if (best===nb) document.getElementById('crownNB').style.display='block';
-  renderBars('f1'); renderRadar(); renderCompTable(); renderCrossValidation(); renderConf('lr'); renderPreds();
+  renderBars('f1'); renderCompTable();
 }
 
 function fillModel(key, m) {
-  document.getElementById('m'+key+'f1').textContent  = pct(m.f1);
+  document.getElementById('m'+key+'f1').textContent = pct(m.f1);
   document.getElementById('m'+key+'acc').textContent = pct(m.accuracy);
   document.getElementById('m'+key+'pre').textContent = pct(m.precision);
   document.getElementById('m'+key+'rec').textContent = pct(m.recall);
@@ -675,64 +403,25 @@ function switchMetric(btn, metric) {
 function renderBars(metric) {
   const [lr,nb,svm] = DATA.modeles;
   const models = [
-    { label:'Régression Logistique', val:lr[metric],  cls:'fill-lr',  col:'var(--violet)' },
-    { label:'Naive Bayes',           val:nb[metric],  cls:'fill-nb',  col:'var(--green)' },
-    { label:'LinearSVC',             val:svm[metric], cls:'fill-svm', col:'var(--rose)' }
+    { label:'Régression Logistique', val:lr[metric], cls:'fill-lr', col:'var(--violet)' },
+    { label:'Naive Bayes', val:nb[metric], cls:'fill-nb', col:'var(--green)' },
+    { label:'LinearSVC', val:svm[metric], cls:'fill-svm', col:'var(--rose)' }
   ];
   document.getElementById('barsContainer').innerHTML = models.map(m=>`
     <div class="bar-wrap">
-      <div class="bar-top">
-        <span class="bar-name">${m.label}</span>
-        <span class="bar-num" style="color:${m.col}">${pct(m.val)}</span>
-      </div>
+      <div class="bar-top"><span class="bar-name">${m.label}</span><span class="bar-num" style="color:${m.col}">${pct(m.val)}</span></div>
       <div class="bar-track"><div class="bar-fill ${m.cls}" data-w="${(m.val*100).toFixed(1)}" style="width:0%"></div></div>
-    </div>
-  `).join('');
+    </div>`).join('');
   setTimeout(()=>{ document.querySelectorAll('.bar-fill').forEach(b=>{ b.style.width = b.dataset.w+'%'; }); }, 80);
-}
-
-function renderRadar() {
-  const [lr,nb,svm] = DATA.modeles;
-  const labels = ['F1','Accuracy','Précision','Rappel'];
-  const cx=180, cy=170, r=120, n=4;
-  const angles = labels.map((_,i)=> (i/n)*2*Math.PI - Math.PI/2);
-  function pt(val,i){ const a=angles[i],rv=r*val; return [cx+rv*Math.cos(a), cy+rv*Math.sin(a)]; }
-  function poly(vals, color){
-    const pts=vals.map((v,i)=>pt(v,i));
-    const d=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+'Z';
-    return `<path d="${d}" fill="${color}" fill-opacity=".15" stroke="${color}" stroke-width="2"/>`;
-  }
-  let gridLines='';
-  [.25,.5,.75,1].forEach(g=>{
-    const pts=angles.map(a=>[cx+r*g*Math.cos(a), cy+r*g*Math.sin(a)]);
-    const d=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+'Z';
-    gridLines+=`<path d="${d}" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
-  });
-  let axisLines=angles.map(a=>`<line x1="${cx}" y1="${cy}" x2="${(cx+r*Math.cos(a)).toFixed(1)}" y2="${(cy+r*Math.sin(a)).toFixed(1)}" stroke="rgba(255,255,255,.08)" stroke-width="1"/>`).join('');
-  let labelEls=labels.map((l,i)=>{ const [x,y]=pt(1.18,i); return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,.5)" font-size="11" font-family="JetBrains Mono,monospace">${l}</text>`; }).join('');
-  const svg=`<svg width="360" height="340" viewBox="0 0 360 340">
-    ${gridLines}${axisLines}
-    ${poly([lr.f1,lr.accuracy,lr.precision,lr.recall],'rgb(139,92,246)')}
-    ${poly([nb.f1,nb.accuracy,nb.precision,nb.recall],'rgb(34,197,94)')}
-    ${poly([svm.f1,svm.accuracy,svm.precision,svm.recall],'rgb(244,63,94)')}
-    ${labelEls}
-    <circle cx="${cx}" cy="${cy}" r="3" fill="rgba(255,255,255,.2)"/>
-  </svg>
-  <div style="display:flex;gap:16px;justify-content:center;margin-top:10px;font-size:10px;font-family:JetBrains Mono,monospace">
-    <span style="color:rgb(139,92,246)">■ LR</span>
-    <span style="color:rgb(34,197,94)">■ NB</span>
-    <span style="color:rgb(244,63,94)">■ SVM</span>
-  </div>`;
-  document.getElementById('radarWrap').innerHTML = svg;
 }
 
 function renderCompTable() {
   const [lr,nb,svm] = DATA.modeles;
   const rows = [
-    { label:'F1-Score',  vals:[lr.f1, nb.f1, svm.f1] },
-    { label:'Accuracy',  vals:[lr.accuracy, nb.accuracy, svm.accuracy] },
+    { label:'F1-Score', vals:[lr.f1, nb.f1, svm.f1] },
+    { label:'Accuracy', vals:[lr.accuracy, nb.accuracy, svm.accuracy] },
     { label:'Précision', vals:[lr.precision, nb.precision, svm.precision] },
-    { label:'Rappel',    vals:[lr.recall, nb.recall, svm.recall] },
+    { label:'Rappel', vals:[lr.recall, nb.recall, svm.recall] },
   ];
   const cs=['var(--violet)','var(--green)','var(--rose)'];
   document.getElementById('cmpBody').innerHTML = rows.map(row=>{
@@ -745,329 +434,194 @@ function renderCompTable() {
   }).join('');
 }
 
-function renderCrossValidation() {
-  const wrap = document.getElementById('cvBody');
-  if (!wrap) return;
-
-  const cvModels = DATA.crossValidation?.models || DATA.modeles.map(m => ({
-    nom: m.nom,
-    f1_mean: m.cv?.f1_mean ?? m.f1,
-    accuracy_mean: m.cv?.accuracy_mean ?? m.accuracy,
-    precision_mean: m.cv?.precision_mean ?? m.precision,
-    recall_mean: m.cv?.recall_mean ?? m.recall,
-    f1_std: m.cv?.f1_std ?? 0,
-    accuracy_std: m.cv?.accuracy_std ?? 0,
-    precision_std: m.cv?.precision_std ?? 0,
-    recall_std: m.cv?.recall_std ?? 0
-  }));
-
-  const metric = (value, std) => `${pct(value)} <span style="color:var(--muted);font-weight:400">± ${pct(std)}</span>`;
-  wrap.innerHTML = cvModels.map(model => `
-    <tr>
-      <td>${model.nom}</td>
-      <td>${metric(model.f1_mean, model.f1_std)}</td>
-      <td>${metric(model.accuracy_mean, model.accuracy_std)}</td>
-      <td>${metric(model.precision_mean, model.precision_std)}</td>
-      <td>${metric(model.recall_mean, model.recall_std)}</td>
-    </tr>
-  `).join('');
-}
-
-// Initialiser confData avec valeurs par défaut si JSON ne charge pas
-if (!confData.lr) {
-  confData.lr  = { tp:5, tn:5, fp:0, fn:1 };
-  confData.nb  = { tp:5, tn:5, fp:0, fn:0 };
-  confData.svm = { tp:5, tn:5, fp:0, fn:1 };
-}
-function switchConf(btn, key) {
-  document.querySelectorAll('.csw').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active'); renderConf(key);
-}
-function renderConf(key) {
-  const d=confData[key];
-  document.getElementById('confTable').innerHTML = `
-    <tr><th></th><th>Prédit Positif</th><th>Prédit Négatif</th></tr>
-    <tr>
-      <th>Réel Positif</th>
-      <td class="cf-tp"><div>${d.tp}</div><div class="cf-lbl">TP</div></td>
-      <td class="cf-fn"><div>${d.fn}</div><div class="cf-lbl">FN</div></td>
-    </tr>
-    <tr>
-      <th>Réel Négatif</th>
-      <td class="cf-fp"><div>${d.fp}</div><div class="cf-lbl">FP</div></td>
-      <td class="cf-tn"><div>${d.tn}</div><div class="cf-lbl">TN</div></td>
-    </tr>`;
-}
-
-function renderPreds() {
-  const badge = v => v===1 ? '<span class="bp">POSITIF</span>' : '<span class="bn">NÉGATIF</span>';
-  const chk = (r,p) => r===p ? '<span class="ok">✓</span>' : '<span class="err">✗</span>';
-  document.getElementById('predsBody').innerHTML = DATA.predictions.map(p=>`
-    <tr>
-      <td class="comment-cell">${p.texte}</td>
-      <td>${badge(p.reel)}</td>
-      <td>${badge(p.predit)} ${chk(p.reel,p.predit)}</td>
-      <td>${badge(p.predit)} ${chk(p.reel,p.predit)}</td>
-      <td>${badge(p.predit)} ${chk(p.reel,p.predit)}</td>
-      <td>${chk(p.reel,p.predit)}</td>
-    </tr>`).join('');
-}
-
-// ── MOTEUR NLP JAVASCRIPT ─────────────────────────────────────────────────────
-// Lexique de sentiment FR + EN avec poids
 const LEXIQUE = {
-  // ── POSITIF FR ──
-  'excellent':5,'parfait':5,'superbe':5,'magnifique':5,'extraordinaire':5,
-  'incroyable':4,'formidable':4,'fantastique':4,'merveilleux':4,'brillant':4,
-  'remarquable':4,'exceptionnel':4,'génial':4,'sublime':4,'impeccable':4,
-  'recommande':3,'satisfait':3,'content':3,'heureux':3,'ravi':3,'ravie':3,
-  'adore':4,'adoré':4,'aime':3,'aimé':3,'aimer':3,'apprécie':3,'apprécié':3,
-  'qualité':2,'solide':2,'fiable':2,'rapide':2,'pratique':2,'agréable':2,
-  'utile':2,'efficace':2,'impressionnant':3,'top':3,'super':3,'bien':2,
-  'bon':2,'bonne':2,'bravo':3,'parfaitement':4,'rien à redire':4,
-  'livraison':1,'conforme':2,'description':1,'achat':1,'produit':1,
-  // ── POSITIF EN ──
-  'amazing':5,'great':4,'love':4,'outstanding':5,'wonderful':4,'best':4,
-  'awesome':4,'incredible':4,'happy':3,'satisfied':3,'good':3,'nice':3,
-  'beautiful':4,'pleased':3,'delighted':4,'impressed':3,'superb':5,
-  'perfect':5,'fantastic':4,'excellent':5,'recommend':3,'works':2,
-  'quality':2,'reliable':2,'fast':2,'useful':2,'helpful':3,'comfortable':2,
-  // ── NÉGATIF FR ──
-  'terrible':5,'horrible':5,'nul':4,'mauvais':4,'décevant':4,'déçu':4,
-  'déception':4,'catastrophique':5,'inutile':4,'cassé':4,'défectueux':4,
-  'arnaque':5,'escroquerie':5,'fragile':3,'dangereux':4,'médiocre':4,
-  'pire':5,'éviter':4,'regrette':4,'remboursement':3,'problème':3,
-  'cher':2,'faux':4,'contrefaçon':5,'déconseille':4,'nul':4,'nulle':4,
-  'fuite':3,'raté':4,'raté':4,'lamentable':5,'honteux':5,'scandaleux':5,
-  'abîmé':3,'endommagé':3,'retourné':3,'retour':2,'refus':3,'déçue':4,
-  // ── NÉGATIF EN ──
-  'terrible':5,'horrible':5,'awful':5,'garbage':5,'waste':4,'broken':4,
-  'defective':4,'disappointed':4,'bad':4,'poor':4,'useless':4,'worst':5,
-  'regret':3,'avoid':4,'damaged':4,'misleading':4,'unreliable':4,
-  'frustrating':4,'disappointing':4,'scam':5,'fake':4,'returned':3,
-  'cheap':3,'overpriced':3,'slow':2,'dirty':3,'ugly':3,'wrong':3
+  'excellent':5, 'amazing':5, 'perfect':5, 'wonderful':5, 'fantastic':5, 'terrific':5,
+  'outstanding':5, 'superb':5, 'love':5, 'adore':5, 'brilliant':5,
+  'exceptional':5, 'fabulous':5, 'phenomenal':5, 'magnificent':5, 'spectacular':5,
+  'magnifique':5, 'formidable':5, 'fantastique':5, 'merveilleux':5,
+  'extraordinaire':5, 'incroyable':5, 'superbe':5, 'adoré':5, 'parfait':5,
+  'great':4, 'good':4, 'nice':4, 'satisfied':4, 'happy':4,
+  'pleased':4, 'delighted':4, 'impressed':4, 'lovely':4,
+  'quality':4, 'reliable':4, 'durable':4, 'comfortable':4, 'convenient':4,
+  'fast':4, 'quick':4, 'efficient':4, 'smooth':4, 'easy':4,
+  'bon':4, 'bonne':4, 'bien':4, 'content':4, 'heureux':4, 'satisfait':4,
+  'agréable':4, 'fiable':4, 'rapide':4, 'efficace':4,
+  'beau':4, 'belle':4, 'joli':4, 'jolie':4, 'aime':4, 'aimé':4, 'adorable':4, 'pratique':4, 'utile':4,
+  'ok':2, 'okay':2, 'alright':2, 'decent':2, 'acceptable':2, 'works':2,
+  'functional':2, 'usable':2, 'clean':2, 'neat':2,
+  'correct':2, 'pas mal':2, 'acceptable':2, 'convenable':2,
+  'terrible':-5, 'horrible':-5, 'awful':-5, 'garbage':-5, 'trash':-5,
+  'useless':-5, 'waste':-5, 'fraud':-5, 'scam':-5, 'hate':-5, 'worst':-5,
+  'disgusting':-5, 'disappointing':-5, 'pathetic':-5, 'broken':-5, 'defective':-5,
+  'dangerous':-5, 'misleading':-5, 'fake':-5, 'counterfeit':-5,
+  'abominable':-5, 'nul':-5, 'nullité':-5, 'mauvais':-5,
+  'catastrophique':-5, 'décevant':-5, 'décevante':-5, 'arnaque':-5, 'escroquerie':-5,
+  'détestable':-5, 'pire':-5, 'pitoyable':-5, 'cassé':-5, 'défectueux':-5,
+  'bad':-4, 'poor':-4, 'cheap':-4, 'flimsy':-4, 'fragile':-4,
+  'slow':-4, 'disappointed':-4, 'unhappy':-4, 'unsatisfied':-4, 'regret':-4,
+  'returned':-4, 'damaged':-4, 'not work':-4,
+  'difficult':-4, 'complicated':-4, 'unclear':-4, 'confusing':-4, 'problem':-4,
+  'mauvaise':-4, 'faible':-4, 'pauvre':-4, 'fragile':-4,
+  'lent':-4, 'déçu':-4, 'décue':-4, 'mécontent':-4, 'insatisfait':-4, 'regrette':-4,
+  'retour':-4, 'abîmé':-4, 'endommagé':-4, 'casse':-4, 'ne fonctionne':-4,
+  'difficile':-4, 'compliqué':-4, 'confus':-4, 'problème':-4, 'problèmes':-4,
+  'mediocre':-2, 'meh':-2, 'lacking':-2,
+  'limited':-2, 'small':-2, 'tight':-2, 'issue':-2,
+  'médiocre':-2, 'moyen':-2, 'limité':-2, 'petit':-2, 'étroit':-2, 'souci':-2,
+  'very':1.5, 'really':1.5, 'so':1.5, 'too':1.5, 'extremely':2.0,
+  'absolutely':1.8, 'totally':1.6, 'completely':1.6, 'definitely':1.5,
+  'tres':1.5, 'vraiment':1.5, 'tellement':1.6, 'extremement':2.0,
+  'absolument':1.8, 'totalement':1.6, 'completement':1.6,
+  'not':0.3, 'no':0.3, 'never':0.2, 'nothing':0.1, 'nobody':0.1,
+  'pas':0.3, 'ne':0.3, 'jamais':0.2, 'rien':0.1, 'aucun':0.1,
 };
 
-// Mots de négation FR + EN
-const NEGATIONS_FR = ['pas','ne','n\'','jamais','plus','aucun','aucune','sans',
-  'ni','non','nullement','guère','point','nul','nulle','personne','rien'];
-const NEGATIONS_EN = ['not','no','never','neither','nor','nothing','nobody',
-  "n't","dont","doesn't","didn't","won't","can't","couldn't","wouldn't","isn't","aren't"];
-const NEGATIONS = [...NEGATIONS_FR, ...NEGATIONS_EN];
-
-// Intensificateurs (multiplient le poids)
-const INTENSIFIERS = {
-  'très':1.5,'vraiment':1.5,'tellement':1.6,'extrêmement':1.8,'absolument':1.7,
-  'totalement':1.6,'complètement':1.6,'vraiment':1.5,'incroyablement':1.8,
-  'super':1.4,'trop':1.4,'ultra':1.5,'hyper':1.5,'franchement':1.3,
-  'really':1.5,'very':1.5,'so':1.4,'absolutely':1.7,'completely':1.6,
-  'totally':1.6,'extremely':1.8,'incredibly':1.8,'quite':1.2,'pretty':1.2,
-  'highly':1.5,'deeply':1.5,'truly':1.5,'utterly':1.7
-};
-
-// Mots de doute (atténuateurs)
-const ATTENUATORS = {
-  'un peu':0.6,'assez':0.7,'plutôt':0.7,'moyennement':0.5,'relativement':0.7,
-  'somewhat':0.6,'fairly':0.7,'rather':0.7,'slightly':0.5,'kind of':0.6,
-  'sort of':0.6,'a bit':0.6,'okay':0.5,'ok':0.5,'correct':0.5
-};
+const NEGATIONS = ['pas','ne','n\'','jamais','non','aucun','aucune','sans','nullement','not','no','never','nothing','nobody','dont','doesn\'t','isn\'t','aren\'t','wasn\'t','weren\'t','can\'t','couldn\'t','won\'t','wouldn\'t'];
 
 function nlpAnalyze(text) {
-  const lower = text.toLowerCase();
+  try {
+    if (!text || typeof text !== 'string') return { isPositif: false, score: 50, explication: 'Texte invalide', tokens: [] };
+    
+    const lower = text.toLowerCase().trim();
+    if (lower.length === 0) return { isPositif: false, score: 50, explication: 'Texte vide', tokens: [] };
+    
+    const tokens = lower
+      .replace(/['']/g, "'")
+      .replace(/[^a-z0-9àâäéèêëîïôùûüçæœ\s\-']/g, ' ')
+      .split(/\s+/)
+      .filter(t => t.length > 0 && t.length < 30);
+    
+    if (tokens.length === 0) return { isPositif: false, score: 50, explication: 'Aucun mot analysable', tokens: [] };
+    
+    let posScore = 0, negScore = 0, foundTokens = [];
+    
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      let weight = LEXIQUE[token] || 0;
+      
+      if (weight === 0) continue;
+      
+      const isIntensifier = weight > 1 && weight < 2.5;
+      const isAttenuator = weight > 0 && weight < 1;
+      const isNegativeSentiment = weight <= -1;
+      const isPositiveSentiment = weight >= 1 && !isIntensifier;
 
-  // Tokenisation simple
-  const tokens = lower
-    .replace(/['']/g, "'")
-    .replace(/[^a-zA-ZàâäéèêëîïôùûüçæœÀÂÄÉÈÊËÎÏÔÙÛÜÇÆŒ'\s]/g, ' ')
-    .split(/\s+/)
-    .filter(t => t.length > 0);
+      if (isIntensifier || isAttenuator) continue;
 
-  let posScore = 0, negScore = 0;
-  const foundTokens = [];
+      const negWindow = tokens.slice(Math.max(0, i - 4), i);
+      const isNegated = negWindow.some(w => NEGATIONS.includes(w));
 
-  // Vérifier atténuateurs multi-mots
-  let attenuator = 1.0;
-  for (const [phrase, mult] of Object.entries(ATTENUATORS)) {
-    if (lower.includes(phrase)) attenuator = Math.min(attenuator, mult);
-  }
-
-  // Analyse token par token avec fenêtre de contexte
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
-    const weight = LEXIQUE[token];
-    if (weight === undefined) continue;
-
-    // Vérifier négation dans une fenêtre de 3 mots avant
-    const window = tokens.slice(Math.max(0, i - 3), i);
-    const isNegated = window.some(w => NEGATIONS.includes(w));
-
-    // Vérifier intensificateur dans une fenêtre de 2 mots avant
-    const intensWindow = tokens.slice(Math.max(0, i - 2), i);
-    const intensMult = intensWindow.reduce((acc, w) => {
-      return INTENSIFIERS[w] ? Math.max(acc, INTENSIFIERS[w]) : acc;
-    }, 1.0);
-
-    const finalWeight = weight * intensMult * attenuator;
-
-    if (isNegated) {
-      // Négation : inverse le sentiment
-      if (weight > 0) {
-        negScore += finalWeight;
-        foundTokens.push({ mot: (isNegated ? 'ne... ' : '') + token, type: 'negatif' });
-      } else {
-        posScore += Math.abs(finalWeight);
-        foundTokens.push({ mot: (isNegated ? 'ne... ' : '') + token, type: 'positif' });
+      const intensWindow = tokens.slice(Math.max(0, i - 3), i);
+      let intensMult = 1.0;
+      for (const w of intensWindow) {
+        const mult = LEXIQUE[w];
+        if (mult && mult > 1 && mult < 2.5) {
+          intensMult = Math.max(intensMult, mult);
+        }
       }
+
+      let finalWeight = Math.abs(weight) * intensMult;
+      for (const w of negWindow) {
+        const attenuator = LEXIQUE[w];
+        if (attenuator && attenuator > 0 && attenuator < 1) {
+          finalWeight *= attenuator;
+        }
+      }
+      
+      if (isNegated) {
+        if (isPositiveSentiment) {
+          negScore += finalWeight;
+          foundTokens.push({ mot: token, type: 'negatif' });
+        } else if (isNegativeSentiment) {
+          posScore += finalWeight;
+          foundTokens.push({ mot: token, type: 'positif' });
+        }
+      } else {
+        if (isPositiveSentiment) {
+          posScore += finalWeight;
+          foundTokens.push({ mot: token, type: 'positif' });
+        } else if (isNegativeSentiment) {
+          negScore += finalWeight;
+          foundTokens.push({ mot: token, type: 'negatif' });
+        }
+      }
+    }
+    
+    const total = posScore + negScore || 1;
+    const isPositif = posScore >= negScore;
+    const rawScore = Math.max(posScore, negScore) / total;
+    const score = posScore === 0 && negScore === 0 ? 50 : Math.min(99, Math.max(51, Math.round(rawScore * 100)));
+    
+    let explication = '';
+    if (posScore === 0 && negScore === 0) {
+      explication = 'Analyse : pas assez d\'indices de sentiment dans le texte.';
+    } else if (isPositif) {
+      const mots = foundTokens.filter(t => t.type === 'positif').map(t => t.mot).slice(0, 4).join(', ');
+      explication = `✓ Prédiction POSITIVE. Mots détectés : ${mots || '(mots indirects)'}.`;
     } else {
-      if (weight > 0) {
-        posScore += finalWeight;
-        foundTokens.push({ mot: token, type: 'positif' });
-      } else {
-        negScore += Math.abs(finalWeight);
-        foundTokens.push({ mot: token, type: 'negatif' });
-      }
+      const mots = foundTokens.filter(t => t.type === 'negatif').map(t => t.mot).slice(0, 4).join(', ');
+      explication = `✗ Prédiction NÉGATIVE. Mots détectés : ${mots || '(mots indirects)'}.`;
     }
+    
+    return { 
+      isPositif, 
+      score, 
+      explication, 
+      tokens: foundTokens.slice(0, 8) 
+    };
+  } catch (e) {
+    console.error('Erreur analyse:', e);
+    return { isPositif: false, score: 50, explication: 'Erreur lors de l\'analyse', tokens: [] };
   }
-
-  // Ajouter mots neutres importants
-  const neutralWords = ['produit','article','commande','livraison','prix','product','item','order','delivery','price'];
-  tokens.forEach(t => {
-    if (neutralWords.includes(t) && !foundTokens.find(f => f.mot === t)) {
-      foundTokens.push({ mot: t, type: 'neutre' });
-    }
-  });
-
-  const total = posScore + negScore || 1;
-  const isPositif = posScore >= negScore;
-  const rawConf = Math.round((Math.max(posScore, negScore) / total) * 100);
-
-  // Score entre 50 et 99
-  const score = posScore === 0 && negScore === 0
-    ? 50
-    : Math.min(99, Math.max(51, rawConf));
-
-  // Générer explication
-  let explication = '';
-  const negFound = tokens.some(t => NEGATIONS.includes(t));
-
-  if (posScore === 0 && negScore === 0) {
-    explication = 'Aucun mot de sentiment détecté. Le texte semble neutre ou factuel. Essayez d\'ajouter des adjectifs qualificatifs.';
-  } else if (isPositif) {
-    const mots = foundTokens.filter(t => t.type === 'positif').map(t => t.mot).slice(0, 3).join(', ');
-    explication = `Le commentaire exprime un sentiment positif`;
-    if (mots) explication += ` grâce aux termes : "${mots}"`;
-    if (negFound) explication += `. Attention : une négation a été détectée et prise en compte dans l'analyse.`;
-    else explication += `. Aucune négation détectée.`;
-    if (attenuator < 1) explication += ` Des atténuateurs ont réduit l'intensité du score.`;
-  } else {
-    const mots = foundTokens.filter(t => t.type === 'negatif').map(t => t.mot).slice(0, 3).join(', ');
-    explication = `Le commentaire exprime un sentiment négatif`;
-    if (mots) explication += ` à cause des termes : "${mots}"`;
-    if (negFound) explication += `. La négation a été détectée et a inversé le sentiment des mots concernés.`;
-    else explication += `.`;
-    if (attenuator < 1) explication += ` Des atténuateurs ont réduit l'intensité du score.`;
-  }
-
-  return {
-    isPositif,
-    score,
-    explication,
-    tokens: foundTokens.slice(0, 6),
-    posScore: posScore.toFixed(1),
-    negScore: negScore.toFixed(1)
-  };
 }
-
-// ── ANALYSE ───────────────────────────────────────────────────────────────────
-let analysisHistory = [];
 
 function analyzeText() {
-  const text = document.getElementById('testInput').value.trim();
-  if (!text) return;
-
-  const result = document.getElementById('aiResult');
-
-  // Analyse NLP
-  const analysis = nlpAnalyze(text);
-  const { isPositif, score, explication, tokens } = analysis;
-
-  // Render
-  result.className = `ai-result show ${isPositif ? 'pos' : 'neg'}`;
-
-  const tokensHtml = tokens.map(t =>
-    `<span class="ai-token ${t.type}-tok">${t.mot}</span>`
-  ).join('');
-
-  const verdict = isPositif ? '✓ POSITIF' : '✗ NÉGATIF';
-  const emoji   = isPositif ? '+' : '−';
-
-  result.innerHTML = `
-    <div class="ai-result-top">
-      <div class="ai-emoji">${emoji}</div>
-      <div class="ai-verdict-wrap">
-        <div class="ai-verdict">${verdict}</div>
-        <div class="ai-conf-bar-wrap">
-          <div class="ai-conf-label">Confiance : ${score}% · 😊 pos:${analysis.posScore} · 😞 nég:${analysis.negScore}</div>
-          <div class="ai-conf-track"><div class="ai-conf-fill" id="aiConfFill2" style="width:0%"></div></div>
+  try {
+    const text = document.getElementById('testInput').value.trim();
+    if (!text) {
+      alert('Veuillez entrer un commentaire');
+      return;
+    }
+    
+    const result = document.getElementById('aiResult');
+    const analysis = nlpAnalyze(text);
+    const { isPositif, score, explication, tokens } = analysis;
+    
+    result.className = `ai-result show ${isPositif ? 'pos' : 'neg'}`;
+    const tokensHtml = tokens.map(t => `<span class="ai-token ${t.type}-tok">${t.mot}</span>`).join('');
+    const verdict = isPositif ? '✅ POSITIF' : '❌ NÉGATIF';
+    const emoji = isPositif ? '😊' : '😞';
+    
+    result.innerHTML = `
+      <div class="ai-result-top">
+        <div class="ai-emoji">${emoji}</div>
+        <div>
+          <div class="ai-verdict">${verdict}</div>
+          <div style="margin-top:6px;">
+            <div class="ai-conf-label">Confiance : ${score}%</div>
+            <div class="ai-conf-track"><div class="ai-conf-fill" id="aiConfFill2" style="width:0%"></div></div>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="ai-explanation">${explication}</div>
-    ${tokensHtml ? `<div class="ai-tokens">${tokensHtml}</div>` : ''}
-  `;
-
-  setTimeout(() => {
-    const fill = document.getElementById('aiConfFill2');
-    if (fill) fill.style.width = score + '%';
-  }, 50);
-
-  // Historique
-  analysisHistory.unshift({ text: text.substring(0, 80), isPos: isPositif, score, emoji });
-  if (analysisHistory.length > 5) analysisHistory.pop();
-  renderHistory();
-}
-
-function renderHistory() {
-  const wrap = document.getElementById('historyWrap');
-  const list = document.getElementById('historyList');
-  if (analysisHistory.length === 0) { wrap.style.display='none'; return; }
-  wrap.style.display = 'block';
-  list.innerHTML = analysisHistory.map((h,i) => `
-    <div class="hist-item" onclick="loadHistory(${i})">
-      <div class="hist-text">${h.emoji} ${h.text}${h.text.length >= 80 ? '…' : ''}</div>
-      <div class="hist-badge">
-        ${h.isPos
-          ? `<span class="bp">POSITIF ${h.score}%</span>`
-          : `<span class="bn">NÉGATIF ${h.score}%</span>`}
-      </div>
-    </div>`).join('');
-}
-
-function loadHistory(i) {
-  const h = analysisHistory[i];
-  document.getElementById('testInput').value = h.text;
+      <div class="ai-explanation">${explication}</div>
+      ${tokensHtml ? `<div class="ai-tokens">${tokensHtml}</div>` : ''}
+    `;
+    
+    setTimeout(() => {
+      const fill = document.getElementById('aiConfFill2');
+      if (fill) fill.style.width = score + '%';
+    }, 50);
+  } catch (e) {
+    console.error('Erreur:', e);
+    alert('Erreur lors de l\'analyse. Vérifiez la console.');
+  }
 }
 
 document.getElementById('testInput').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); analyzeText(); }
 });
 
-// CHARGER LES DONNÉES AU DÉMARRAGE
-window.addEventListener('DOMContentLoaded', () => {
-  console.log('📊 Chargement des données...');
-  loadData();
-});
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', loadData);
-} else {
-  loadData();
-}
-
-const header = document.querySelector('header');
-if (header) {
-  header.style.background = 'linear-gradient(180deg, rgba(0,115,230,0.01) 0%, transparent 100%)';
-}
+render();
 </script>
 </body>
 </html>

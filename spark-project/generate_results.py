@@ -16,6 +16,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import LinearSVC
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score, confusion_matrix, make_scorer
 import numpy as np
+import kagglehub
 
 
 def stem_word(word):
@@ -131,14 +132,9 @@ def train_models(X_train_tfidf, y_train, X_test_tfidf, y_test):
     
     for model_name, model in models.items():
         print(f"  Entraînement: {model_name}...", end=" ")
-        
-        # Entraînement
         model.fit(X_train_tfidf, y_train)
-        
-        # Prédictions
         y_pred = model.predict(X_test_tfidf)
-        
-        # Métriques
+
         f1 = f1_score(y_test, y_pred)
         acc = accuracy_score(y_test, y_pred)
         prec = precision_score(y_test, y_pred)
@@ -151,7 +147,6 @@ def train_models(X_train_tfidf, y_train, X_test_tfidf, y_test):
             'recall': round(rec, 4)
         }
         
-        # Matrice de confusion
         cm = confusion_matrix(y_test, y_pred)
         tn, fp, fn, tp = cm.ravel()
         confusion_matrices[model_name] = {
@@ -163,7 +158,6 @@ def train_models(X_train_tfidf, y_train, X_test_tfidf, y_test):
         
         print(f"✓ (F1={f1:.4f})")
     
-    # Sauvegarder 5 prédictions du premier modèle
     first_model = list(models.values())[0]
     y_pred_first = first_model.predict(X_test_tfidf)
     for i in range(min(5, len(X_test_tfidf.toarray()))):
@@ -181,30 +175,35 @@ def main():
     print("SENTIMENT ANALYSIS PIPELINE")
     print("=" * 80)
     
-    # 1. Charger les données
-    print("\n[ÉTAPE 1] Chargement du dataset")
-    base_dir = Path(__file__).resolve().parent
-    project_root = base_dir.parent
-    kaggle_path = base_dir / "data" / "reviews_kaggle.csv"
-    csv_path = kaggle_path if kaggle_path.exists() else (base_dir / "data" / "reviews.csv")
-    if not csv_path.exists():
-        print(f"❌ Fichier non trouvé: {csv_path}")
+    print("\n[ÉTAPE 1] Téléchargement du dataset Amazon Reviews")
+    project_root = Path(__file__).resolve().parent.parent
+    
+    try:
+        dataset_path = kagglehub.dataset_download("kritanjalijain/amazon-reviews")
+        print(f"✓ Dataset téléchargé: {dataset_path}")
+    except Exception as e:
+        print(f"⚠ Impossible de télécharger depuis Kaggle: {e}")
+        dataset_path = project_root
+    
+    train_csv = project_root / "train.csv"
+    test_csv = project_root / "test.csv"
+    
+    if not (train_csv.exists() and test_csv.exists()):
+        print(f"❌ Fichiers non trouvés: train.csv ou test.csv")
         return
     
     global texts_test
-    texts, labels = load_data(csv_path)
-    print(f"✓ {len(texts)} avis chargés")
+    texts, labels = load_data(train_csv)
+    print(f"✓ {len(texts)} avis de train.csv chargés")
     
     pos_count = sum(1 for l in labels if l == 1)
     neg_count = len(labels) - pos_count
     print(f"  - Positifs: {pos_count} ({pos_count*100//len(labels)}%)")
     print(f"  - Négatifs: {neg_count} ({neg_count*100//len(labels)}%)")
 
-    # 1b. Validation croisée
     print("\n[ÉTAPE 1b] Validation croisée 5-fold")
     cv_results = cross_validate_models(texts, labels)
     
-    # 2. Split train-test
     print("\n[ÉTAPE 2] Split Train-Test (80-20)")
     X_train, X_test, y_train, y_test = train_test_split(
         texts, labels, test_size=0.2, random_state=42, stratify=labels
@@ -212,7 +211,6 @@ def main():
     texts_test = X_test
     print(f"✓ Train: {len(X_train)}, Test: {len(X_test)}")
     
-    # 3. Vectorisation TF-IDF
     print("\n[ÉTAPE 3] Vectorisation TF-IDF")
     vectorizer = TfidfVectorizer(max_features=256, lowercase=True, 
                                   ngram_range=(1, 2), min_df=1, max_df=0.9)
@@ -222,13 +220,11 @@ def main():
     print(f"✓ Matrice train: {X_train_tfidf.shape}")
     print(f"✓ Matrice test: {X_test_tfidf.shape}")
     
-    # 4. Entraînement et évaluation
     print("\n[ÉTAPE 4] Entraînement des modèles")
     results, confusion_matrices, predictions = train_models(
         X_train_tfidf, y_train, X_test_tfidf, y_test
     )
     
-    # 5. Générer JSON
     print("\n[ÉTAPE 5] Génération du fichier résultats.json")
     
     output_data = {
@@ -276,7 +272,6 @@ def main():
     
     print(f"✓ Résultats sauvegardés: {output_path}")
     
-    # 6. Afficher le rapport
     print("\n[RÉSULTATS]")
     print("-" * 80)
     for model_name, metrics in results.items():
