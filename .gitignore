@@ -1,3 +1,11 @@
+amazon_review_polarity_csv.tgz
+rapport_10_pages.pdf
+train.csv
+test.csv
+spark-project/data/
+spark-project/data/*
+spark-project/data/sentiment.csv
+
 # Scala/SBT
 target/
 .target/
