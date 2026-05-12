@@ -1,53 +1,52 @@
-# Analyse de sentiment (Projet 5)
+Analyse de sentiment (Projet 5)
 
-Ce projet fait une chose simple et utile: **deviner l'humeur d'un avis**. On nettoie le texte, on le vectorise, puis trois modèles donnent leur verdict. Tout s'affiche dans un dashboard clair, avec une zone de test pour essayer vos propres phrases.
+Ce projet permet de prédire le sentiment d’un avis client (positif ou négatif).
+Le texte est nettoyé, transformé en variables numériques, puis analysé par trois modèles de machine learning.
+Les résultats sont affichés dans un dashboard interactif avec une zone de test.
 
-## Ce que vous pouvez faire
-
-- Ouvrir le dashboard et lire les métriques
-- Tester un commentaire en direct (zone interactive)
-- Recalculer les résultats avec le script Python
-- Voir une validation croisée 5-fold dans le dashboard
-
-## Démarrage rapide
-
-### 1) Voir le dashboard
-
-```bash
+Ce que vous pouvez faire
+Ouvrir le dashboard et consulter les métriques des modèles
+Tester un commentaire en direct
+Recalculer les résultats avec le script Python
+Voir une validation croisée 5-fold
+Démarrage rapide
+1) Lancer le dashboard
 dashboard.html
-```
 
-Si les données ne chargent pas (bloqué par le navigateur), lancez un petit serveur local:
+Si le chargement des données est bloqué par le navigateur :
 
-```bash
 python -m http.server 8000
-```
 
-Puis ouvrez http://localhost:8000/dashboard.html
+Puis ouvrir :
 
-### 2) Recalculer les resultats (Python)
+http://localhost:8000/dashboard.html
 
-```bash
+2) Recalculer les résultats (Python)
 cd spark-project
 pip install scikit-learn numpy
 python generate_results.py
-```
-
-## Structure minimale
-
-```
+Structure du projet
 sentiment/
 ├── dashboard.html
 ├── resultats.json
 └── spark-project/
     ├── generate_results.py
     └── src/main/scala/com/sentiment/SentimentAnalysis.scala
-```
+Données utilisées
 
-## A propos des donnees
+Le projet utilise le dataset Amazon Review Polarity.
+Il contient des avis clients réels annotés avec une polarité :
 
-Le dashboard **affiche** ce qui est dans `resultats.json`. Pour mettre a jour les chiffres, relancez `generate_results.py` (ou le pipeline Scala) puis rafraichissez le dashboard. Les fichiers de jeu de données lourds restent locaux et sont ignores par git.
+1 = négatif
+2 = positif
 
-## Auteur
+Un sous-ensemble équilibré est utilisé pour l’entraînement et les tests.
+
+Le dashboard affiche uniquement le contenu du fichier resultats.json.
+Pour mettre à jour les résultats, il faut relancer le script Python ou le pipeline Spark, puis rafraîchir la page.
+
+Les fichiers de données volumineux ne sont pas versionnés dans Git.
+
+Auteur
 
 Mariam BARBOUCH
