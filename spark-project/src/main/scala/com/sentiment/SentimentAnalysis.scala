@@ -1,270 +1,240 @@
 package com.sentiment
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.ml.{Pipeline, PipelineModel}
-import org.apache.spark.ml.feature.{Tokenizer, StopWordsRemover, HashingTF, IDF}
+import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.feature.{Tokenizer, StopWordsRemover, HashingTF, IDF, Word2Vec}
 import org.apache.spark.ml.classification.{LogisticRegression, NaiveBayes, LinearSVC}
 import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
-import org.apache.spark.mllib.evaluation.MulticlassMetrics
+import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.sql.functions._
-import scala.math._
-import scala.util.Random
+import org.apache.spark.sql.types._
 import java.io.{File, PrintWriter}
-import scala.io.Source
 import java.util.Locale
 
 object SentimentAnalysis {
 
-  case class Review(id: Int, texte: String, sentiment: Double)
-  case class ModelMetrics(nom: String, f1: Double, accuracy: Double, precision: Double, recall: Double)
-  case class ConfusionMatrix(modelName: String, tp: Int, tn: Int, fp: Int, fn: Int)
-
-  private val punctuationPattern = "[\\p{Punct}\\p{IsPunctuation}]+".r
+  case class Metrics(nom: String, f1: Double, accuracy: Double, precision: Double, recall: Double)
+  case class CM(modelName: String, tp: Int, tn: Int, fp: Int, fn: Int)
+  case class CVResult(nom: String, auc: Double, params: String)
 
   private def stemWord(word: String): String = {
     val w = word.toLowerCase(Locale.ROOT)
-
-    if (w.length <= 3) {
-      w
-    } else if (w.endsWith("ement")) {
-      w.dropRight(5)
-    } else if (w.endsWith("ments")) {
-      w.dropRight(5)
-    } else if (w.endsWith("tion")) {
-      w.dropRight(4)
-    } else if (w.endsWith("ions")) {
-      w.dropRight(4)
-    } else if (w.endsWith("eaux")) {
-      w.dropRight(1)
-    } else if (w.endsWith("aux")) {
-      w.dropRight(1)
-    } else if (w.endsWith("es") && w.length > 4) {
-      w.dropRight(2)
-    } else if (w.endsWith("s") && w.length > 4) {
-      w.dropRight(1)
-    } else if (w.endsWith("e") && w.length > 4) {
-      w.dropRight(1)
-    } else {
-      w
-    }
+    if (w.length <= 3)            w
+    else if (w.endsWith("ement")) w.dropRight(5)
+    else if (w.endsWith("ments")) w.dropRight(5)
+    else if (w.endsWith("tion"))  w.dropRight(4)
+    else if (w.endsWith("ions"))  w.dropRight(4)
+    else if (w.endsWith("eaux"))  w.dropRight(1)
+    else if (w.endsWith("aux"))   w.dropRight(1)
+    else if (w.endsWith("es") && w.length > 4) w.dropRight(2)
+    else if (w.endsWith("s")  && w.length > 4) w.dropRight(1)
+    else if (w.endsWith("e")  && w.length > 4) w.dropRight(1)
+    else w
   }
 
-  private def normalizeAndStem(text: String): String = {
-    if (text == null) {
-      ""
-    } else {
-      punctuationPattern.replaceAllIn(text.toLowerCase(Locale.ROOT), " ")
-        .split("\\s+")
-        .filter(_.nonEmpty)
-        .map(stemWord)
-        .mkString(" ")
-    }
+  private def normalize(text: String): String = {
+    if (text == null) return ""
+    "[\\p{Punct}\\p{IsPunctuation}]+".r
+      .replaceAllIn(text.toLowerCase(Locale.ROOT), " ")
+      .split("\\s+")
+      .filter(_.nonEmpty)
+      .map(stemWord)
+      .mkString(" ")
   }
+
+  private def computeMetrics(name: String, preds: org.apache.spark.sql.DataFrame, total: Long) = {
+    val tp = preds.filter(col("prediction") === 1.0 && col("sentiment") === 1.0).count().toInt
+    val tn = preds.filter(col("prediction") === 0.0 && col("sentiment") === 0.0).count().toInt
+    val fp = preds.filter(col("prediction") === 1.0 && col("sentiment") === 0.0).count().toInt
+    val fn = preds.filter(col("prediction") === 0.0 && col("sentiment") === 1.0).count().toInt
+
+    val acc  = (tp + tn).toDouble / total
+    val prec = if (tp + fp > 0) tp.toDouble / (tp + fp) else 0.0
+    val rec  = if (tp + fn > 0) tp.toDouble / (tp + fn) else 0.0
+    val f1   = if (prec + rec > 0) 2 * prec * rec / (prec + rec) else 0.0
+
+    (Metrics(name, f1, acc, prec, rec), CM(name, tp, tn, fp, fn))
+  }
+
+  private def r4(x: Double) = math.round(x * 10000) / 10000.0
 
   def main(args: Array[String]): Unit = {
+
     val spark = SparkSession.builder()
       .appName("SentimentAnalysis")
       .master("local[*]")
       .getOrCreate()
 
     spark.sparkContext.setLogLevel("ERROR")
-
-    println("=" * 80)
-    println("SENTIMENT ANALYSIS PIPELINE - Spark MLlib")
-    println("=" * 80)
+    import spark.implicits._
 
     try {
-      // 1. Load and explore dataset
-      val kagglePath = "spark-project/data/reviews_kaggle.csv"
-      val dataPath = if (new File(kagglePath).exists()) kagglePath else "spark-project/data/reviews.csv"
-      val df = spark.read
-        .option("header", "true")
-        .option("inferSchema", "true")
+
+      // chargement du dataset Amazon Review Polarity
+      // format: sans header, 3 colonnes (polarity, title, text)
+      val dataPath = if (args.nonEmpty) args(0) else "train.csv"
+
+      val schema = StructType(Seq(
+        StructField("polarity", IntegerType),
+        StructField("title",    StringType),
+        StructField("text",     StringType)
+      ))
+
+      val raw = spark.read
+        .schema(schema)
+        .option("header", "false")
         .csv(dataPath)
 
-      println("\n[STEP 1] Dataset Exploration")
-      println(s"Total samples: ${df.count()}")
-      df.show(5)
+      // polarity 2 = positif (1), polarity 1 = negatif (0)
+      val df = raw
+        .withColumn("texte",    concat_ws(" ", col("title"), col("text")))
+        .withColumn("sentiment", when(col("polarity") === 2, 1.0).otherwise(0.0))
+        .select("texte", "sentiment")
+        .na.drop()
 
-      val positiveCount = df.filter(col("sentiment") === 1).count()
-      val negativeCount = df.filter(col("sentiment") === 0).count()
-      println(s"Positive samples: $positiveCount (${(positiveCount * 100 / df.count()).toInt}%)")
-      println(s"Negative samples: $negativeCount (${(negativeCount * 100 / df.count()).toInt}%)")
+      // echantillon equilibre 5000 par classe
+      val balanced = df.filter(col("sentiment") === 1.0).limit(5000)
+        .union(df.filter(col("sentiment") === 0.0).limit(5000))
+        .cache()
 
-      // 2. Train-test split (80-20)
-      val Array(trainData, testData) = df.randomSplit(Array(0.8, 0.2), seed = 42)
-      println(s"\n[STEP 2] Train-Test Split")
-      println(s"Train set: ${trainData.count()} samples")
-      println(s"Test set: ${testData.count()} samples")
+      val total = balanced.count()
+      val nPos  = balanced.filter(col("sentiment") === 1.0).count()
+      val nNeg  = balanced.filter(col("sentiment") === 0.0).count()
+      println(s"dataset: $total avis ($nPos positifs, $nNeg negatifs)")
+      balanced.show(5, truncate = 70)
 
-      // 3. Build NLP Pipeline
-      println("\n[STEP 3] NLP Pipeline Construction")
+      // split train/test 80-20
+      val Array(train, test) = balanced.randomSplit(Array(0.8, 0.2), seed = 42)
+      val nTest = test.count()
+      println(s"train=${train.count()}  test=$nTest")
 
-      val normalizeUdf = udf((text: String) => normalizeAndStem(text))
+      // preprocessing NLP
+      val normUdf = udf((t: String) => normalize(t))
+      val trainPrep = train.withColumn("stemmed", normUdf(col("texte")))
+      val testPrep  = test.withColumn("stemmed",  normUdf(col("texte")))
 
       val tokenizer = new Tokenizer()
-        .setInputCol("stemmed_text")
-        .setOutputCol("words")
+        .setInputCol("stemmed").setOutputCol("words")
 
-      val stopWordsRemover = new StopWordsRemover()
-        .setInputCols(Array("words"))
-        .setOutputCol("filtered_words")
-        .setStopWords(StopWordsRemover.loadDefaultStopWords("french") ++ StopWordsRemover.loadDefaultStopWords("english"))
+      val stopwords = new StopWordsRemover()
+        .setInputCols(Array("words")).setOutputCol("filtered")
+        .setStopWords(
+          StopWordsRemover.loadDefaultStopWords("english") ++
+          StopWordsRemover.loadDefaultStopWords("french")
+        )
 
-      val hashingTF = new HashingTF()
-        .setInputCol("filtered_words")
-        .setOutputCol("raw_features")
-        .setNumFeatures(256)
+      val hashTF = new HashingTF()
+        .setInputCol("filtered").setOutputCol("raw_features").setNumFeatures(256)
 
       val idf = new IDF()
-        .setInputCol("raw_features")
-        .setOutputCol("features")
+        .setInputCol("raw_features").setOutputCol("features")
 
-      val preparedTrainData = trainData.withColumn("stemmed_text", normalizeUdf(col("texte")))
-      val preparedTestData = testData.withColumn("stemmed_text", normalizeUdf(col("texte")))
+      val w2v = new Word2Vec()
+        .setInputCol("filtered").setOutputCol("features")
+        .setVectorSize(100).setMinCount(1).setSeed(42)
 
-      println("✓ Tokenizer configured")
-      println("✓ StopWordsRemover configured (FR + EN)")
-      println("✓ Text normalization and stemming configured")
-      println("✓ HashingTF configured (256 features)")
-      println("✓ IDF configured")
-
-      // 4. Create and train models
-      println("\n[STEP 4] Model Training")
-
-      val models = Seq(
-        ("LR", new LogisticRegression().setMaxIter(100).setRegParam(0.01).setLabelCol("sentiment").setFeaturesCol("features")),
-        ("NB", new NaiveBayes().setLabelCol("sentiment").setFeaturesCol("features").setSmoothing(1.0)),
-        ("SVM", new LinearSVC().setMaxIter(100).setRegParam(0.01).setLabelCol("sentiment").setFeaturesCol("features"))
+      // entrainement TF-IDF + 3 classifieurs
+      val classifiers = Seq(
+        ("LR",  new LogisticRegression().setMaxIter(100).setRegParam(0.01)
+                    .setLabelCol("sentiment").setFeaturesCol("features")),
+        ("NB",  new NaiveBayes().setSmoothing(1.0)
+                    .setLabelCol("sentiment").setFeaturesCol("features")),
+        ("SVM", new LinearSVC().setMaxIter(100).setRegParam(0.01)
+                    .setLabelCol("sentiment").setFeaturesCol("features"))
       )
 
-      val pipelines = models.map { case (name, classifier) =>
-        val pipeline = new Pipeline().setStages(Array(tokenizer, stopWordsRemover, hashingTF, idf, classifier))
-        (name, pipeline)
-      }
-
-      val trainedModels = pipelines.map { case (name, pipeline) =>
-        println(s"  Training $name...")
-        val model = pipeline.fit(preparedTrainData)
-        println(s"  ✓ $name trained")
+      val tfidfModels = classifiers.map { case (name, clf) =>
+        val pipeline = new Pipeline().setStages(Array(tokenizer, stopwords, hashTF, idf, clf))
+        println(s"entrainement TF-IDF + $name...")
+        val model = pipeline.fit(trainPrep)
         (name, model)
       }
 
-      // 5. Evaluate models
-      println("\n[STEP 5] Model Evaluation")
-
-      val evaluator = new BinaryClassificationEvaluator()
-        .setLabelCol("sentiment")
-        .setRawPredictionCol("rawPrediction")
-
-      val metricsResults = trainedModels.map { case (name, model) =>
-        val predictions = model.transform(preparedTestData)
-        
-        // Calculate basic metrics
-        val correctPredictions = predictions.filter(col("prediction") === col("sentiment")).count()
-        val accuracy = correctPredictions.toDouble / testData.count()
-
-        // Calculate confusion matrix metrics
-        val tp = predictions.filter(col("prediction") === 1 && col("sentiment") === 1).count().toInt
-        val tn = predictions.filter(col("prediction") === 0 && col("sentiment") === 0).count().toInt
-        val fp = predictions.filter(col("prediction") === 1 && col("sentiment") === 0).count().toInt
-        val fn = predictions.filter(col("prediction") === 0 && col("sentiment") === 1).count().toInt
-
-        val precision = if ((tp + fp) > 0) tp.toDouble / (tp + fp) else 0.0
-        val recall = if ((tp + fn) > 0) tp.toDouble / (tp + fn) else 0.0
-        val f1 = if ((precision + recall) > 0) 2 * (precision * recall) / (precision + recall) else 0.0
-
-        println(s"  $name: F1=${f1.formatted("%.4f")}, Acc=${accuracy.formatted("%.4f")}, Prec=${precision.formatted("%.4f")}, Rec=${recall.formatted("%.4f")}")
-
-        (name, ModelMetrics(name, f1, accuracy, precision, recall), ConfusionMatrix(name, tp, tn, fp, fn))
+      val tfidfResults = tfidfModels.map { case (name, model) =>
+        val p = model.transform(testPrep)
+        val (m, cm) = computeMetrics(s"TF-IDF + $name", p, nTest)
+        println(s"TF-IDF + $name: F1=${r4(m.f1)} Acc=${r4(m.accuracy)} Prec=${r4(m.precision)} Rec=${r4(m.recall)}")
+        (m, cm)
       }
 
-      // 6. Generate results JSON
-      println("\n[STEP 6] Generating Results JSON")
+      // Word2Vec + LR
+      val lrW2V = new LogisticRegression().setMaxIter(100).setRegParam(0.01)
+        .setLabelCol("sentiment").setFeaturesCol("features")
+      val w2vModel = new Pipeline().setStages(Array(tokenizer, stopwords, w2v, lrW2V)).fit(trainPrep)
+      val (w2vMetrics, w2vCM) = computeMetrics("Word2Vec + LR", w2vModel.transform(testPrep), nTest)
+      println(s"Word2Vec + LR: F1=${r4(w2vMetrics.f1)} Acc=${r4(w2vMetrics.accuracy)}")
 
-      val dataset = Map(
-        "total" -> df.count().toInt,
-        "positifs" -> positiveCount.toInt,
-        "negatifs" -> negativeCount.toInt,
-        "train" -> trainData.count().toInt,
-        "test" -> testData.count().toInt
+      // validation croisee 5-fold
+      val evaluator = new BinaryClassificationEvaluator()
+        .setLabelCol("sentiment").setMetricName("areaUnderROC")
+
+      val lrCV = new LogisticRegression().setLabelCol("sentiment").setFeaturesCol("features")
+      val lrGrid = new ParamGridBuilder()
+        .addGrid(lrCV.maxIter, Array(50, 100))
+        .addGrid(lrCV.regParam, Array(0.01, 0.1))
+        .build()
+      val lrCVModel = new CrossValidator()
+        .setEstimator(new Pipeline().setStages(Array(tokenizer, stopwords, hashTF, idf, lrCV)))
+        .setEvaluator(evaluator).setEstimatorParamMaps(lrGrid).setNumFolds(5).setSeed(42)
+        .fit(trainPrep)
+      val lrBestAUC = lrCVModel.avgMetrics.max
+      val lrBestIdx = lrCVModel.avgMetrics.indexOf(lrBestAUC)
+      println(s"CV LR meilleur AUC-ROC: ${r4(lrBestAUC)}")
+
+      val nbCV = new NaiveBayes().setLabelCol("sentiment").setFeaturesCol("features")
+      val nbGrid = new ParamGridBuilder()
+        .addGrid(nbCV.smoothing, Array(0.5, 1.0, 2.0))
+        .build()
+      val nbCVModel = new CrossValidator()
+        .setEstimator(new Pipeline().setStages(Array(tokenizer, stopwords, hashTF, idf, nbCV)))
+        .setEvaluator(evaluator).setEstimatorParamMaps(nbGrid).setNumFolds(5).setSeed(42)
+        .fit(trainPrep)
+      val nbBestAUC = nbCVModel.avgMetrics.max
+      val nbBestIdx = nbCVModel.avgMetrics.indexOf(nbBestAUC)
+      println(s"CV NB meilleur AUC-ROC: ${r4(nbBestAUC)}")
+
+      val cvResults = Seq(
+        CVResult("TF-IDF + LR (CV)", lrBestAUC,
+          s"maxIter=${lrGrid(lrBestIdx)(lrCV.maxIter)}, regParam=${lrGrid(lrBestIdx)(lrCV.regParam)}"),
+        CVResult("TF-IDF + NB (CV)", nbBestAUC,
+          s"smoothing=${nbGrid(nbBestIdx)(nbCV.smoothing)}")
       )
 
-      val modeles = metricsResults.map { case (_, metrics, _) =>
-        Map(
-          "nom" -> metrics.nom,
-          "f1" -> round(metrics.f1 * 10000) / 10000.0,
-          "accuracy" -> round(metrics.accuracy * 10000) / 10000.0,
-          "precision" -> round(metrics.precision * 10000) / 10000.0,
-          "recall" -> round(metrics.recall * 10000) / 10000.0
-        )
-      }
+      // generation resultats.json
+      val allMetrics = tfidfResults.map(_._1) :+ w2vMetrics
+      val allCMs     = tfidfResults.map(_._2) :+ w2vCM
 
-      val confusionMatrices = metricsResults.map { case (_, _, cm) =>
-        Map(
-          "modelName" -> cm.modelName,
-          "tp" -> cm.tp,
-          "tn" -> cm.tn,
-          "fp" -> cm.fp,
-          "fn" -> cm.fn
-        )
-      }
+      val samplePreds = tfidfModels.head._2
+        .transform(testPrep.limit(5))
+        .select("texte", "sentiment", "prediction")
+        .collect()
+        .map(r => Map("texte" -> r.getString(0), "reel" -> r.getDouble(1).toInt, "predit" -> r.getDouble(2).toInt))
 
-      // Get predictions for 5 test samples
-      val testModelPredictions = trainedModels.head._2.transform(preparedTestData.limit(5))
-      val predictions = testModelPredictions.select("texte", "sentiment", "prediction").collect().map { row =>
-        Map(
-          "texte" -> row.getString(0),
-          "reel" -> row.getDouble(1).toInt,
-          "predit" -> row.getDouble(2).toInt
-        )
-      }
-
-      val jsonContent = s"""{
-  "dataset": {
-    "total": ${dataset("total")},
-    "positifs": ${dataset("positifs")},
-    "negatifs": ${dataset("negatifs")},
-    "train": ${dataset("train")},
-    "test": ${dataset("test")}
-  },
+      val json =
+        s"""{
+  "dataset": { "total": ${total.toInt}, "positifs": ${nPos.toInt}, "negatifs": ${nNeg.toInt},
+    "train": ${train.count().toInt}, "test": ${nTest.toInt} },
   "modeles": [
-${modeles.map { m =>
-  s"""    {
-      "nom": "${m("nom")}",
-      "f1": ${m("f1")},
-      "accuracy": ${m("accuracy")},
-      "precision": ${m("precision")},
-      "recall": ${m("recall")}
-    }"""
-}.mkString(",\n")}
+${allMetrics.map(m => s"""    {"nom":"${m.nom}","f1":${r4(m.f1)},"accuracy":${r4(m.accuracy)},"precision":${r4(m.precision)},"recall":${r4(m.recall)}}""").mkString(",\n")}
   ],
+  "crossValidation": { "folds": 5, "metric": "AUC-ROC", "models": [
+${cvResults.map(c => s"""    {"nom":"${c.nom}","bestAUC":${r4(c.auc)},"bestParams":"${c.params}"}""").mkString(",\n")}
+  ]},
   "confusionMatrices": [
-${confusionMatrices.map { cm =>
-  s"""    {
-      "modelName": "${cm("modelName")}",
-      "tp": ${cm("tp")},
-      "tn": ${cm("tn")},
-      "fp": ${cm("fp")},
-      "fn": ${cm("fn")}
-    }"""
-}.mkString(",\n")}
+${allCMs.map(c => s"""    {"modelName":"${c.modelName}","tp":${c.tp},"tn":${c.tn},"fp":${c.fp},"fn":${c.fn}}""").mkString(",\n")}
   ],
   "predictions": [
-${predictions.map { p =>
-  s"""    {"texte": "${p("texte")}", "reel": ${p("reel")}, "predit": ${p("predit")}}"""
-}.mkString(",\n")}
+${samplePreds.map(p => s"""    {"texte":"${p("texte").toString.replace("\"","\\\"").take(80)}","reel":${p("reel")},"predit":${p("predit")}}""").mkString(",\n")}
   ]
 }"""
 
-      val writer = new PrintWriter(new File("sentiment/resultats.json"))
-      writer.write(jsonContent)
-      writer.close()
-      println("✓ Results saved to sentiment/resultats.json")
+      val w = new PrintWriter(new File("resultats.json"))
+      w.write(json); w.close()
+      println("resultats.json sauvegarde")
 
-      println("\n" + "=" * 80)
-      println("PIPELINE COMPLETED SUCCESSFULLY")
-      println("=" * 80)
+      println("\n--- resultats ---")
+      allMetrics.foreach(m =>
+        println(f"${m.nom}%-30s F1=${m.f1}%.4f  Acc=${m.accuracy}%.4f  Prec=${m.precision}%.4f  Rec=${m.recall}%.4f"))
 
     } finally {
       spark.stop()

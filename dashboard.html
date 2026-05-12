@@ -200,14 +200,14 @@ footer { border-top:1px solid var(--border); padding:20px 48px; font-size:11px; 
 
 <header>
   <div class="hd-left">
-    <div class="logo-box">🧠</div>
+    <div class="logo-box">NLP</div>
     <div>
       <div class="hd-title">NLP Sentiment Analysis</div>
-      <div class="hd-sub">Spark MLlib · Kaggle Dataset</div>
+      <div class="hd-sub">Spark MLlib · Amazon Reviews · Classification de texte</div>
     </div>
   </div>
   <div class="hd-right">
-    <div class="live-badge"><div class="live-dot"></div> Actif</div>
+    
   </div>
 </header>
 
@@ -226,21 +226,21 @@ footer { border-top:1px solid var(--border); padding:20px 48px; font-size:11px; 
   <div class="card">
     <div class="card-hd"><div class="card-title"><div class="dot8" style="background:var(--cyan)"></div> Étapes</div></div>
     <div class="pipeline">
-      <div class="pipe-step"><div class="pipe-icon">📥</div><div class="pipe-lbl">Input</div></div>
+      <div class="pipe-step"><div class="pipe-icon">IN</div><div class="pipe-lbl">Input</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon">🔡</div><div class="pipe-lbl">Lowercase</div></div>
+      <div class="pipe-step"><div class="pipe-icon">lc</div><div class="pipe-lbl">Lowercase</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon">✂️</div><div class="pipe-lbl">Tokenizer</div></div>
+      <div class="pipe-step"><div class="pipe-icon">tok</div><div class="pipe-lbl">Tokenizer</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon">🚫</div><div class="pipe-lbl">StopWords</div></div>
+      <div class="pipe-step"><div class="pipe-icon">sw</div><div class="pipe-lbl">StopWords</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon">🌿</div><div class="pipe-lbl">Stemming</div></div>
+      <div class="pipe-step"><div class="pipe-icon">stm</div><div class="pipe-lbl">Stemming</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon">📊</div><div class="pipe-lbl">TF-IDF</div></div>
+      <div class="pipe-step"><div class="pipe-icon">tfidf</div><div class="pipe-lbl">TF-IDF</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon">🤖</div><div class="pipe-lbl">Model</div></div>
+      <div class="pipe-step"><div class="pipe-icon">clf</div><div class="pipe-lbl">Model</div></div>
       <div class="pipe-arrow"></div>
-      <div class="pipe-step"><div class="pipe-icon">✅</div><div class="pipe-lbl">Output</div></div>
+      <div class="pipe-step"><div class="pipe-icon">OUT</div><div class="pipe-lbl">Output</div></div>
     </div>
   </div>
 
@@ -257,7 +257,7 @@ footer { border-top:1px solid var(--border); padding:20px 48px; font-size:11px; 
       </div>
     </div>
     <div class="model-card mc-nb">
-      <div class="winner-crown" id="crownNB" style="display:none">🏆</div>
+      <div class="winner-crown" id="crownNB" style="display:none">*</div>
       <div class="model-badge">NB</div>
       <div class="model-name">TF-IDF + Naive Bayes</div>
       <div class="model-metrics">
@@ -311,29 +311,16 @@ footer { border-top:1px solid var(--border); padding:20px 48px; font-size:11px; 
       <div class="card-title"><div class="dot8" style="background:var(--amber)"></div> Prédiction sur nouveau commentaire</div>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">
-      Basé sur les patterns du dataset (10 000 avis). Les résultats utilisent le même NLP que l'entraînement.
+      Pipeline NLP : normalisation, stemming, TF-IDF, Regression Logistique.
     </div>
     <textarea id="testInput" placeholder="Entrez un avis pour prédire le sentiment…"></textarea>
-    <button class="analyze-btn" id="analyzeBtn" onclick="analyzeText()">⚡ Prédire</button>
-    <div class="ai-result" id="aiResult">
-      <div class="ai-result-top">
-        <div class="ai-emoji" id="aiEmoji"></div>
-        <div>
-          <div class="ai-verdict" id="aiVerdict"></div>
-          <div style="margin-top:6px;">
-            <div class="ai-conf-label" id="aiConfLabel"></div>
-            <div class="ai-conf-track"><div class="ai-conf-fill" id="aiConfFill" style="width:0%"></div></div>
-          </div>
-        </div>
-      </div>
-      <div class="ai-explanation" id="aiExplanation"></div>
-      <div class="ai-tokens" id="aiTokens"></div>
-    </div>
+    <button class="analyze-btn" id="analyzeBtn" onclick="analyzeText()">Predire</button>
+    <div class="ai-result" id="aiResult"></div>
   </div>
 
 </div>
 
-<footer>Analyse de Sentiments · Spark MLlib · Kaggle Dataset · 10 000 avis</footer>
+<footer>Analyse de Sentiments · Spark MLlib · Amazon Reviews</footer>
 
 <script>
 let DATA = {
@@ -345,27 +332,9 @@ let DATA = {
     "test": 2000
   },
   "modeles": [
-    {
-      "nom": "TF-IDF + Régression Logistique",
-      "f1": 0.8075,
-      "accuracy": 0.804,
-      "precision": 0.8278,
-      "recall": 0.7881
-    },
-    {
-      "nom": "TF-IDF + Naive Bayes",
-      "f1": 0.8047,
-      "accuracy": 0.802,
-      "precision": 0.8284,
-      "recall": 0.7824
-    },
-    {
-      "nom": "TF-IDF + LinearSVC",
-      "f1": 0.8051,
-      "accuracy": 0.8025,
-      "precision": 0.8293,
-      "recall": 0.7824
-    }
+    { "nom": "TF-IDF + Régression Logistique", "f1": 0.8075, "accuracy": 0.804,  "precision": 0.8278, "recall": 0.7881 },
+    { "nom": "TF-IDF + Naive Bayes",           "f1": 0.8047, "accuracy": 0.802,  "precision": 0.8284, "recall": 0.7824 },
+    { "nom": "TF-IDF + LinearSVC",             "f1": 0.8051, "accuracy": 0.8025, "precision": 0.8293, "recall": 0.7824 }
   ]
 };
 
@@ -374,254 +343,263 @@ function pct(v) { return (v * 100).toFixed(1) + '%'; }
 function render() {
   const ds = DATA.dataset;
   const [lr, nb, svm] = DATA.modeles;
-  document.getElementById('sTotal').textContent = ds.total;
-  document.getElementById('sPos').textContent = ds.positifs;
-  document.getElementById('sNeg').textContent = ds.negatifs;
-  document.getElementById('sTrain').textContent = ds.train;
-  document.getElementById('sTest').textContent = ds.test;
-  document.getElementById('sPosP').textContent = Math.round(ds.positifs/ds.total*100) + '%';
-  document.getElementById('sNegP').textContent = Math.round(ds.negatifs/ds.total*100) + '%';
+  document.getElementById('sTotal').textContent  = ds.total;
+  document.getElementById('sPos').textContent    = ds.positifs;
+  document.getElementById('sNeg').textContent    = ds.negatifs;
+  document.getElementById('sTrain').textContent  = ds.train;
+  document.getElementById('sTest').textContent   = ds.test;
+  document.getElementById('sPosP').textContent   = Math.round(ds.positifs / ds.total * 100) + '%';
+  document.getElementById('sNegP').textContent   = Math.round(ds.negatifs / ds.total * 100) + '%';
   fillModel('LR', lr); fillModel('NB', nb); fillModel('SVM', svm);
-  const best = [lr,nb,svm].reduce((a,b)=>b.f1>a.f1?b:a);
-  if (best===nb) document.getElementById('crownNB').style.display='block';
-  renderBars('f1'); renderCompTable();
+  const best = [lr, nb, svm].reduce((a, b) => b.f1 > a.f1 ? b : a);
+  if (best === nb) document.getElementById('crownNB').style.display = 'block';
+  renderBars('f1');
+  renderCompTable();
 }
 
 function fillModel(key, m) {
-  document.getElementById('m'+key+'f1').textContent = pct(m.f1);
-  document.getElementById('m'+key+'acc').textContent = pct(m.accuracy);
-  document.getElementById('m'+key+'pre').textContent = pct(m.precision);
-  document.getElementById('m'+key+'rec').textContent = pct(m.recall);
+  document.getElementById('m' + key + 'f1').textContent  = pct(m.f1);
+  document.getElementById('m' + key + 'acc').textContent = pct(m.accuracy);
+  document.getElementById('m' + key + 'pre').textContent = pct(m.precision);
+  document.getElementById('m' + key + 'rec').textContent = pct(m.recall);
 }
 
 let curMetric = 'f1';
 function switchMetric(btn, metric) {
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active'); curMetric = metric; renderBars(metric);
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  curMetric = metric;
+  renderBars(metric);
 }
 
 function renderBars(metric) {
-  const [lr,nb,svm] = DATA.modeles;
+  const [lr, nb, svm] = DATA.modeles;
   const models = [
-    { label:'Régression Logistique', val:lr[metric], cls:'fill-lr', col:'var(--violet)' },
-    { label:'Naive Bayes', val:nb[metric], cls:'fill-nb', col:'var(--green)' },
-    { label:'LinearSVC', val:svm[metric], cls:'fill-svm', col:'var(--rose)' }
+    { label: 'Régression Logistique', val: lr[metric],  cls: 'fill-lr',  col: 'var(--violet)' },
+    { label: 'Naive Bayes',           val: nb[metric],  cls: 'fill-nb',  col: 'var(--green)'  },
+    { label: 'LinearSVC',             val: svm[metric], cls: 'fill-svm', col: 'var(--rose)'   }
   ];
-  document.getElementById('barsContainer').innerHTML = models.map(m=>`
+  document.getElementById('barsContainer').innerHTML = models.map(m => `
     <div class="bar-wrap">
-      <div class="bar-top"><span class="bar-name">${m.label}</span><span class="bar-num" style="color:${m.col}">${pct(m.val)}</span></div>
-      <div class="bar-track"><div class="bar-fill ${m.cls}" data-w="${(m.val*100).toFixed(1)}" style="width:0%"></div></div>
+      <div class="bar-top">
+        <span class="bar-name">${m.label}</span>
+        <span class="bar-num" style="color:${m.col}">${pct(m.val)}</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill ${m.cls}" data-w="${(m.val * 100).toFixed(1)}" style="width:0%"></div>
+      </div>
     </div>`).join('');
-  setTimeout(()=>{ document.querySelectorAll('.bar-fill').forEach(b=>{ b.style.width = b.dataset.w+'%'; }); }, 80);
+  setTimeout(() => {
+    document.querySelectorAll('.bar-fill').forEach(b => { b.style.width = b.dataset.w + '%'; });
+  }, 80);
 }
 
 function renderCompTable() {
-  const [lr,nb,svm] = DATA.modeles;
+  const [lr, nb, svm] = DATA.modeles;
   const rows = [
-    { label:'F1-Score', vals:[lr.f1, nb.f1, svm.f1] },
-    { label:'Accuracy', vals:[lr.accuracy, nb.accuracy, svm.accuracy] },
-    { label:'Précision', vals:[lr.precision, nb.precision, svm.precision] },
-    { label:'Rappel', vals:[lr.recall, nb.recall, svm.recall] },
+    { label: 'F1-Score',  vals: [lr.f1,        nb.f1,        svm.f1]        },
+    { label: 'Accuracy',  vals: [lr.accuracy,   nb.accuracy,  svm.accuracy]  },
+    { label: 'Précision', vals: [lr.precision,  nb.precision, svm.precision] },
+    { label: 'Rappel',    vals: [lr.recall,     nb.recall,    svm.recall]    },
   ];
-  const cs=['var(--violet)','var(--green)','var(--rose)'];
-  document.getElementById('cmpBody').innerHTML = rows.map(row=>{
-    const maxV=Math.max(...row.vals);
-    const cells=row.vals.map((v,i)=>{
-      const isBest=v===maxV;
-      return `<td style="color:${isBest?cs[i]:'var(--muted)'}" class="${isBest?'best-cell':''}">${pct(v)}</td>`;
+  const cs = ['var(--violet)', 'var(--green)', 'var(--rose)'];
+  document.getElementById('cmpBody').innerHTML = rows.map(row => {
+    const maxV  = Math.max(...row.vals);
+    const cells = row.vals.map((v, i) => {
+      const isBest = v === maxV;
+      return `<td style="color:${isBest ? cs[i] : 'var(--muted)'}" class="${isBest ? 'best-cell' : ''}">${pct(v)}</td>`;
     });
     return `<tr><td>${row.label}</td>${cells.join('')}</tr>`;
   }).join('');
 }
 
-const LEXIQUE = {
-  'excellent':5, 'amazing':5, 'perfect':5, 'wonderful':5, 'fantastic':5, 'terrific':5,
-  'outstanding':5, 'superb':5, 'love':5, 'adore':5, 'brilliant':5,
-  'exceptional':5, 'fabulous':5, 'phenomenal':5, 'magnificent':5, 'spectacular':5,
-  'magnifique':5, 'formidable':5, 'fantastique':5, 'merveilleux':5,
-  'extraordinaire':5, 'incroyable':5, 'superbe':5, 'adoré':5, 'parfait':5,
-  'great':4, 'good':4, 'nice':4, 'satisfied':4, 'happy':4,
-  'pleased':4, 'delighted':4, 'impressed':4, 'lovely':4,
-  'quality':4, 'reliable':4, 'durable':4, 'comfortable':4, 'convenient':4,
-  'fast':4, 'quick':4, 'efficient':4, 'smooth':4, 'easy':4,
-  'bon':4, 'bonne':4, 'bien':4, 'content':4, 'heureux':4, 'satisfait':4,
-  'agréable':4, 'fiable':4, 'rapide':4, 'efficace':4,
-  'beau':4, 'belle':4, 'joli':4, 'jolie':4, 'aime':4, 'aimé':4, 'adorable':4, 'pratique':4, 'utile':4,
-  'ok':2, 'okay':2, 'alright':2, 'decent':2, 'acceptable':2, 'works':2,
-  'functional':2, 'usable':2, 'clean':2, 'neat':2,
-  'correct':2, 'pas mal':2, 'acceptable':2, 'convenable':2,
-  'terrible':-5, 'horrible':-5, 'awful':-5, 'garbage':-5, 'trash':-5,
-  'useless':-5, 'waste':-5, 'fraud':-5, 'scam':-5, 'hate':-5, 'worst':-5,
-  'disgusting':-5, 'disappointing':-5, 'pathetic':-5, 'broken':-5, 'defective':-5,
-  'dangerous':-5, 'misleading':-5, 'fake':-5, 'counterfeit':-5,
-  'abominable':-5, 'nul':-5, 'nullité':-5, 'mauvais':-5,
-  'catastrophique':-5, 'décevant':-5, 'décevante':-5, 'arnaque':-5, 'escroquerie':-5,
-  'détestable':-5, 'pire':-5, 'pitoyable':-5, 'cassé':-5, 'défectueux':-5,
-  'bad':-4, 'poor':-4, 'cheap':-4, 'flimsy':-4, 'fragile':-4,
-  'slow':-4, 'disappointed':-4, 'unhappy':-4, 'unsatisfied':-4, 'regret':-4,
-  'returned':-4, 'damaged':-4, 'not work':-4,
-  'difficult':-4, 'complicated':-4, 'unclear':-4, 'confusing':-4, 'problem':-4,
-  'mauvaise':-4, 'faible':-4, 'pauvre':-4, 'fragile':-4,
-  'lent':-4, 'déçu':-4, 'décue':-4, 'mécontent':-4, 'insatisfait':-4, 'regrette':-4,
-  'retour':-4, 'abîmé':-4, 'endommagé':-4, 'casse':-4, 'ne fonctionne':-4,
-  'difficile':-4, 'compliqué':-4, 'confus':-4, 'problème':-4, 'problèmes':-4,
-  'mediocre':-2, 'meh':-2, 'lacking':-2,
-  'limited':-2, 'small':-2, 'tight':-2, 'issue':-2,
-  'médiocre':-2, 'moyen':-2, 'limité':-2, 'petit':-2, 'étroit':-2, 'souci':-2,
-  'very':1.5, 'really':1.5, 'so':1.5, 'too':1.5, 'extremely':2.0,
-  'absolutely':1.8, 'totally':1.6, 'completely':1.6, 'definitely':1.5,
-  'tres':1.5, 'vraiment':1.5, 'tellement':1.6, 'extremement':2.0,
-  'absolument':1.8, 'totalement':1.6, 'completement':1.6,
-  'not':0.3, 'no':0.3, 'never':0.2, 'nothing':0.1, 'nobody':0.1,
-  'pas':0.3, 'ne':0.3, 'jamais':0.2, 'rien':0.1, 'aucun':0.1,
-};
 
-const NEGATIONS = ['pas','ne','n\'','jamais','non','aucun','aucune','sans','nullement','not','no','never','nothing','nobody','dont','doesn\'t','isn\'t','aren\'t','wasn\'t','weren\'t','can\'t','couldn\'t','won\'t','wouldn\'t'];
+let MODEL = null;
 
-function nlpAnalyze(text) {
+async function loadModel() {
   try {
-    if (!text || typeof text !== 'string') return { isPositif: false, score: 50, explication: 'Texte invalide', tokens: [] };
-    
-    const lower = text.toLowerCase().trim();
-    if (lower.length === 0) return { isPositif: false, score: 50, explication: 'Texte vide', tokens: [] };
-    
-    const tokens = lower
-      .replace(/['']/g, "'")
-      .replace(/[^a-z0-9àâäéèêëîïôùûüçæœ\s\-']/g, ' ')
-      .split(/\s+/)
-      .filter(t => t.length > 0 && t.length < 30);
-    
-    if (tokens.length === 0) return { isPositif: false, score: 50, explication: 'Aucun mot analysable', tokens: [] };
-    
-    let posScore = 0, negScore = 0, foundTokens = [];
-    
-    for (let i = 0; i < tokens.length; i++) {
-      const token = tokens[i];
-      let weight = LEXIQUE[token] || 0;
-      
-      if (weight === 0) continue;
-      
-      const isIntensifier = weight > 1 && weight < 2.5;
-      const isAttenuator = weight > 0 && weight < 1;
-      const isNegativeSentiment = weight <= -1;
-      const isPositiveSentiment = weight >= 1 && !isIntensifier;
-
-      if (isIntensifier || isAttenuator) continue;
-
-      const negWindow = tokens.slice(Math.max(0, i - 4), i);
-      const isNegated = negWindow.some(w => NEGATIONS.includes(w));
-
-      const intensWindow = tokens.slice(Math.max(0, i - 3), i);
-      let intensMult = 1.0;
-      for (const w of intensWindow) {
-        const mult = LEXIQUE[w];
-        if (mult && mult > 1 && mult < 2.5) {
-          intensMult = Math.max(intensMult, mult);
-        }
-      }
-
-      let finalWeight = Math.abs(weight) * intensMult;
-      for (const w of negWindow) {
-        const attenuator = LEXIQUE[w];
-        if (attenuator && attenuator > 0 && attenuator < 1) {
-          finalWeight *= attenuator;
-        }
-      }
-      
-      if (isNegated) {
-        if (isPositiveSentiment) {
-          negScore += finalWeight;
-          foundTokens.push({ mot: token, type: 'negatif' });
-        } else if (isNegativeSentiment) {
-          posScore += finalWeight;
-          foundTokens.push({ mot: token, type: 'positif' });
-        }
-      } else {
-        if (isPositiveSentiment) {
-          posScore += finalWeight;
-          foundTokens.push({ mot: token, type: 'positif' });
-        } else if (isNegativeSentiment) {
-          negScore += finalWeight;
-          foundTokens.push({ mot: token, type: 'negatif' });
-        }
-      }
-    }
-    
-    const total = posScore + negScore || 1;
-    const isPositif = posScore >= negScore;
-    const rawScore = Math.max(posScore, negScore) / total;
-    const score = posScore === 0 && negScore === 0 ? 50 : Math.min(99, Math.max(51, Math.round(rawScore * 100)));
-    
-    let explication = '';
-    if (posScore === 0 && negScore === 0) {
-      explication = 'Analyse : pas assez d\'indices de sentiment dans le texte.';
-    } else if (isPositif) {
-      const mots = foundTokens.filter(t => t.type === 'positif').map(t => t.mot).slice(0, 4).join(', ');
-      explication = `✓ Prédiction POSITIVE. Mots détectés : ${mots || '(mots indirects)'}.`;
-    } else {
-      const mots = foundTokens.filter(t => t.type === 'negatif').map(t => t.mot).slice(0, 4).join(', ');
-      explication = `✗ Prédiction NÉGATIVE. Mots détectés : ${mots || '(mots indirects)'}.`;
-    }
-    
-    return { 
-      isPositif, 
-      score, 
-      explication, 
-      tokens: foundTokens.slice(0, 8) 
-    };
-  } catch (e) {
-    console.error('Erreur analyse:', e);
-    return { isPositif: false, score: 50, explication: 'Erreur lors de l\'analyse', tokens: [] };
+    const resp = await fetch('model_weights.json');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    MODEL = await resp.json();
+        MODEL.vocabIndex = {};
+    MODEL.vocab.forEach((term, i) => { MODEL.vocabIndex[term] = i; });
+      } catch (e) {
+    console.warn('model_weights.json non trouve', e);
+    MODEL = null;
   }
 }
 
-function analyzeText() {
-  try {
-    const text = document.getElementById('testInput').value.trim();
-    if (!text) {
-      alert('Veuillez entrer un commentaire');
-      return;
+function stemWord(w) {
+  w = w.toLowerCase();
+  if (w.length <= 3)                    return w;
+  if (w.endsWith('ement'))              return w.slice(0, -5);
+  if (w.endsWith('ments'))              return w.slice(0, -5);
+  if (w.endsWith('tion'))               return w.slice(0, -4);
+  if (w.endsWith('ions'))               return w.slice(0, -4);
+  if (w.endsWith('eaux'))               return w.slice(0, -1);
+  if (w.endsWith('aux'))                return w.slice(0, -1);
+  if (w.endsWith('es') && w.length > 4) return w.slice(0, -2);
+  if (w.endsWith('s')  && w.length > 4) return w.slice(0, -1);
+  if (w.endsWith('e')  && w.length > 4) return w.slice(0, -1);
+  return w;
+}
+
+function normalizeText(text) {
+  return text.toLowerCase()
+    .replace(/[\W_]+/g, ' ')
+    .split(/\s+/)
+    .filter(t => t.length > 0)
+    .map(stemWord)
+    .join(' ');
+}
+
+function vectorize(text) {
+  if (!MODEL) return null;
+  const tokens = normalizeText(text).split(' ').filter(t => t.length > 0);
+  if (tokens.length === 0) return null;
+
+    const ngrams = [...tokens];
+  for (let i = 0; i < tokens.length - 1; i++) {
+    ngrams.push(tokens[i] + ' ' + tokens[i + 1]);
+  }
+
+    const tf = {};
+  ngrams.forEach(g => { tf[g] = (tf[g] || 0) + 1; });
+
+    const vec = new Float64Array(MODEL.vocab.length);
+  let norm = 0;
+  for (const [gram, count] of Object.entries(tf)) {
+    const idx = MODEL.vocabIndex[gram];
+    if (idx !== undefined) {
+      const val = count * MODEL.idf[idx];
+      vec[idx] = val;
+      norm += val * val;
     }
-    
-    const result = document.getElementById('aiResult');
-    const analysis = nlpAnalyze(text);
-    const { isPositif, score, explication, tokens } = analysis;
-    
-    result.className = `ai-result show ${isPositif ? 'pos' : 'neg'}`;
-    const tokensHtml = tokens.map(t => `<span class="ai-token ${t.type}-tok">${t.mot}</span>`).join('');
-    const verdict = isPositif ? '✅ POSITIF' : '❌ NÉGATIF';
-    const emoji = isPositif ? '😊' : '😞';
-    
+  }
+    norm = Math.sqrt(norm);
+  if (norm > 0) {
+    for (let i = 0; i < vec.length; i++) vec[i] /= norm;
+  }
+  return { vec, tokens, ngrams };
+}
+
+function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+function predictSentiment(text) {
+  if (!MODEL) return { noModel: true };
+
+  const result = vectorize(text);
+  if (!result) return null;
+  const { vec, tokens } = result;
+
+    let score = MODEL.bias;
+  for (let i = 0; i < MODEL.coef.length; i++) {
+    score += MODEL.coef[i] * vec[i];
+  }
+  const prob = sigmoid(score);
+  const isPositif = prob >= 0.5;
+  const confidence = Math.round(Math.max(prob, 1 - prob) * 100);
+
+    const contrib = [];
+  for (let i = 0; i < MODEL.vocab.length; i++) {
+    if (vec[i] > 0) {
+      contrib.push({ term: MODEL.vocab[i], score: MODEL.coef[i] * vec[i] });
+    }
+  }
+  contrib.sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
+  const posWords = contrib.filter(c => c.score > 0).slice(0, 5).map(c => c.term);
+  const negWords = contrib.filter(c => c.score < 0).slice(0, 5).map(c => c.term);
+
+  return { isPositif, confidence, posWords, negWords, tokens, prob };
+}
+
+function analyzeText() {
+  const text = document.getElementById('testInput').value.trim();
+  if (!text) { alert('Veuillez entrer un commentaire'); return; }
+
+  const result = document.getElementById('aiResult');
+  const pred   = predictSentiment(text);
+
+    if (pred && pred.noModel) {
+    result.className = 'ai-result show neg';
     result.innerHTML = `
       <div class="ai-result-top">
-        <div class="ai-emoji">${emoji}</div>
-        <div>
-          <div class="ai-verdict">${verdict}</div>
-          <div style="margin-top:6px;">
-            <div class="ai-conf-label">Confiance : ${score}%</div>
-            <div class="ai-conf-track"><div class="ai-conf-fill" id="aiConfFill2" style="width:0%"></div></div>
+        <div class="ai-emoji">⚙️</div>
+        <div><div class="ai-verdict" style="color:var(--amber)">MODÈLE NON CHARGÉ</div></div>
+      </div>
+      <div class="ai-explanation">
+        Lancez <code>python generate_results.py</code> pour entraîner le modèle sur le dataset Amazon Reviews
+        et générer <code>model_weights.json</code>, puis rechargez la page.
+      </div>`;
+    return;
+  }
+
+  if (!pred) {
+    result.className = 'ai-result show neg';
+    result.innerHTML = `
+      <div class="ai-result-top">
+        <div class="ai-emoji">🤔</div>
+        <div><div class="ai-verdict" style="color:var(--muted)">INDÉTERMINÉ</div></div>
+      </div>
+      <div class="ai-explanation">Texte vide ou aucun token reconnu après prétraitement.</div>`;
+    return;
+  }
+
+  const { isPositif, confidence, posWords, negWords, tokens } = pred;
+  result.className = `ai-result show ${isPositif ? 'pos' : 'neg'}`;
+
+  const verdict  = isPositif ? ' POSITIF' : ' NÉGATIF';
+  const emoji    = isPositif ? '😊' : '😞';
+  const sig      = isPositif ? posWords : negWords;
+  const sigLabel = isPositif ? 'Features positives (poids LR)' : 'Features négatives (poids LR)';
+
+  const tokensHtml = [
+    ...posWords.slice(0, 4).map(w => `<span class="ai-token pos-tok">${w}</span>`),
+    ...negWords.slice(0, 4).map(w => `<span class="ai-token neg-tok">${w}</span>`),
+    ...tokens.filter(t => !posWords.includes(t) && !negWords.includes(t))
+              .slice(0, 4)
+              .map(w => `<span class="ai-token neu-tok">${w}</span>`)
+  ].join('');
+
+  const pipeline = `
+    <div style="margin-top:14px;padding:10px 14px;background:#f5f5f5;border-radius:8px;font-size:11px;font-family:var(--mono);color:var(--muted);">
+      <strong style="color:var(--cyan)">Pipeline applique :</strong>
+      normalisation, stemming, TF-IDF, Regression Logistique<br>
+      <strong>Tokens après prétraitement :</strong> ${tokens.slice(0, 8).join(' · ')}${tokens.length > 8 ? ' …' : ''}
+    </div>`;
+
+  result.innerHTML = `
+    <div class="ai-result-top">
+      <div class="ai-emoji">${emoji}</div>
+      <div>
+        <div class="ai-verdict">${verdict}</div>
+        <div style="margin-top:6px;">
+          <div class="ai-conf-label">Confiance : ${confidence}%</div>
+          <div class="ai-conf-track">
+            <div class="ai-conf-fill" id="aiConfFill2" style="width:0%"></div>
           </div>
         </div>
       </div>
-      <div class="ai-explanation">${explication}</div>
-      ${tokensHtml ? `<div class="ai-tokens">${tokensHtml}</div>` : ''}
-    `;
-    
-    setTimeout(() => {
-      const fill = document.getElementById('aiConfFill2');
-      if (fill) fill.style.width = score + '%';
-    }, 50);
-  } catch (e) {
-    console.error('Erreur:', e);
-    alert('Erreur lors de l\'analyse. Vérifiez la console.');
-  }
+    </div>
+    <div class="ai-explanation">
+      ${isPositif ? '✓' : '✗'} Prédiction <strong>${isPositif ? 'POSITIVE' : 'NÉGATIVE'}</strong>
+      basée sur les poids LR entraînés sur Amazon Reviews.
+      ${sig.length > 0 ? `${sigLabel} : <em>${sig.slice(0, 4).join(', ')}</em>.` : ''}
+    </div>
+    ${tokensHtml ? `<div class="ai-tokens">${tokensHtml}</div>` : ''}
+    ${pipeline}`;
+
+  setTimeout(() => {
+    const fill = document.getElementById('aiConfFill2');
+    if (fill) fill.style.width = confidence + '%';
+  }, 50);
 }
 
 document.getElementById('testInput').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); analyzeText(); }
 });
 
-render();
+loadModel().then(() => render());
 </script>
 </body>
 </html>
