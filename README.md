@@ -41,13 +41,12 @@ sentiment/
 ├── resultats.json
 └── spark-project/
     ├── generate_results.py
-    ├── data/reviews.csv
     └── src/main/scala/com/sentiment/SentimentAnalysis.scala
 ```
 
 ## A propos des donnees
 
-Le dashboard **affiche** ce qui est dans `resultats.json`. Pour mettre a jour les chiffres, relancez `generate_results.py` (ou le pipeline Scala) puis rafraichissez le dashboard.
+Le dashboard **affiche** ce qui est dans `resultats.json`. Pour mettre a jour les chiffres, relancez `generate_results.py` (ou le pipeline Scala) puis rafraichissez le dashboard. Les fichiers de jeu de données lourds restent locaux et sont ignores par git.
 
 ## Auteur
 
